@@ -32,4 +32,85 @@ describe("normalizeProject", () => {
   it("maps related relations", () => {
     expect(data.relations).toContainEqual({ type: "related", fromIssueId: "i3", toIssueId: "i1" });
   });
+
+  it("skips unknown relation types", () => {
+    const data = normalizeProject({
+      issues: {
+        nodes: [
+          {
+            id: "x1",
+            identifier: "ENG-9",
+            title: "Thing",
+            estimate: null,
+            branchName: null,
+            state: { name: "Todo" },
+            relations: { nodes: [{ type: "clones", relatedIssue: { id: "x2" } }] },
+          },
+        ],
+      },
+    });
+    expect(data.relations).toHaveLength(0);
+  });
+
+  it("skips relations with no relatedIssue id", () => {
+    const data = normalizeProject({
+      issues: {
+        nodes: [
+          {
+            id: "x1",
+            identifier: "ENG-9",
+            title: "Thing",
+            estimate: null,
+            branchName: null,
+            state: { name: "Todo" },
+            relations: { nodes: [{ type: "blocks", relatedIssue: null }] },
+          },
+        ],
+      },
+    });
+    expect(data.relations).toHaveLength(0);
+  });
+
+  it("defaults missing state to 'unknown'", () => {
+    const data = normalizeProject({
+      issues: {
+        nodes: [
+          {
+            id: "x1",
+            identifier: "ENG-9",
+            title: "Thing",
+            estimate: null,
+            branchName: null,
+            state: null,
+            relations: { nodes: [] },
+          },
+        ],
+      },
+    });
+    expect(data.issues[0].state).toBe("unknown");
+  });
+
+  it("de-duplicates identical relations on the same issue", () => {
+    const data = normalizeProject({
+      issues: {
+        nodes: [
+          {
+            id: "x1",
+            identifier: "ENG-9",
+            title: "Thing",
+            estimate: null,
+            branchName: null,
+            state: { name: "Todo" },
+            relations: {
+              nodes: [
+                { type: "blocks", relatedIssue: { id: "x2" } },
+                { type: "blocks", relatedIssue: { id: "x2" } },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    expect(data.relations).toHaveLength(1);
+  });
 });
