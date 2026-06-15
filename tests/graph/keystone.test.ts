@@ -65,6 +65,19 @@ describe("rankKeystones", () => {
     const ranking = rankKeystones(buildFeatureGraph(["a", "b"].map(issue), [blocks("a", "b"), blocks("b", "a")]));
     expect(ranking.warnings.join(" ")).toMatch(/cycle/i);
     expect(ranking.ranked).toHaveLength(2);
+    expect(ranking.ranked.every((e) => e.leverage === 0)).toBe(true);
+  });
+
+  it("reports isolated nodes alongside a connected component", () => {
+    // a -> b connected; c isolated
+    const ranking = rankKeystones(
+      buildFeatureGraph(["a", "b", "c"].map(issue), [blocks("a", "b")])
+    );
+    expect(ranking.isolated).toEqual(["c"]);
+    const a = ranking.ranked.find((e) => e.id === "a")!;
+    const c = ranking.ranked.find((e) => e.id === "c")!;
+    expect(a.leverage).toBe(1); // dominates b
+    expect(c.leverage).toBe(0);
   });
 
   it("lists dominated tickets by identifier", () => {

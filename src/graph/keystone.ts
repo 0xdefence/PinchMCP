@@ -6,6 +6,12 @@ export function rankKeystones(graph: FeatureGraph): KeystoneRanking {
   const nodeIds = [...graph.nodes.keys()];
   const warnings: string[] = [];
 
+  if (graph.nodes.has(ENTRY)) {
+    throw new Error(
+      'Issue id "__ENTRY__" collides with the internal sentinel used for dominator analysis.'
+    );
+  }
+
   const isolated = nodeIds.filter(
     (id) =>
       (graph.successors.get(id)?.size ?? 0) === 0 &&
@@ -46,14 +52,29 @@ export function rankKeystones(graph: FeatureGraph): KeystoneRanking {
     if (!domChildren.has(d)) domChildren.set(d, []);
     domChildren.get(d)!.push(n);
   }
+  // Dominated lists (descendants in the dom tree), computed iteratively.
   const dominatedList = new Map<string, string[]>();
-  const collect = (n: string): string[] => {
-    let all: string[] = [];
-    for (const k of domChildren.get(n) ?? []) all = all.concat([k], collect(k));
-    dominatedList.set(n, all);
-    return all;
+  const computeDominated = (root: string): string[] => {
+    // Post-order via explicit stack so children are finalized before parent.
+    const order: string[] = [];
+    const stack = [root];
+    while (stack.length) {
+      const n = stack.pop()!;
+      order.push(n);
+      for (const c of domChildren.get(n) ?? []) stack.push(c);
+    }
+    // order is root-first (pre-order, reversed children); process in reverse for post-order.
+    for (let i = order.length - 1; i >= 0; i--) {
+      const n = order[i];
+      const acc: string[] = [];
+      for (const c of domChildren.get(n) ?? []) {
+        acc.push(c, ...(dominatedList.get(c) ?? []));
+      }
+      dominatedList.set(n, acc);
+    }
+    return dominatedList.get(root) ?? [];
   };
-  collect(ENTRY);
+  computeDominated(ENTRY);
 
   const ranked = nodeIds
     .map((id) => {
