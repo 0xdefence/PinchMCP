@@ -73,4 +73,26 @@ describe("buildFeatureGraph", () => {
     );
     expect(g.edges).toHaveLength(0);
   });
+
+  it("de-duplicates blocks + blocked_by describing the same dependency", () => {
+    const g = buildFeatureGraph(
+      [issue("a", "ENG-1"), issue("b", "ENG-2")],
+      [
+        { type: "blocks", fromIssueId: "a", toIssueId: "b" },
+        { type: "blocked_by", fromIssueId: "b", toIssueId: "a" },
+      ]
+    );
+    expect(g.edges).toHaveLength(1);
+    expect(g.edges[0]).toEqual({ from: "a", to: "b" });
+  });
+
+  it("treats duplicate relations as metadata like related", () => {
+    const g = buildFeatureGraph(
+      [issue("a", "ENG-1"), issue("b", "ENG-2")],
+      [{ type: "duplicate", fromIssueId: "a", toIssueId: "b" }]
+    );
+    expect(g.edges).toHaveLength(0);
+    expect([...g.relatedMeta.get("a")!]).toEqual(["b"]);
+    expect([...g.relatedMeta.get("b")!]).toEqual(["a"]);
+  });
 });
