@@ -1,6 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { normalizeProject } from "../../src/linear/client.js";
-import fixture from "../fixtures/linearProject.json";
+import fixture from "../fixtures/linearProject.json" with { type: "json" };
 
 describe("normalizeProject", () => {
   const data = normalizeProject(fixture);

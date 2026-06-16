@@ -2,7 +2,7 @@
   "name": "pinch-mcp",
   "version": "0.1.0",
   "type": "module",
-  "bin": { "pinch-mcp": "dist/index.js" },
+  "bin": { "pinch-mcp": "dist/src/index.js" },
   "scripts": {
     "build": "tsc",
     "dev": "tsx src/index.ts",
