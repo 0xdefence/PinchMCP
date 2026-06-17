@@ -1,0 +1,40 @@
+{
+  "issues": {
+    "nodes": [
+      {
+        "id": "i1",
+        "identifier": "ENG-1",
+        "title": "Auth refactor",
+        "estimate": 3,
+        "branchName": "eng-1-auth-refactor",
+        "state": { "name": "In Progress" },
+        "relations": {
+          "nodes": [
+            { "type": "blocks", "relatedIssue": { "id": "i2" } },
+            { "type": "blocks", "relatedIssue": { "id": "ghost" } }
+          ]
+        }
+      },
+      {
+        "id": "i2",
+        "identifier": "ENG-2",
+        "title": "Session store",
+        "estimate": null,
+        "branchName": null,
+        "state": { "name": "Todo" },
+        "relations": { "nodes": [] }
+      },
+      {
+        "id": "i3",
+        "identifier": "ENG-3",
+        "title": "Login page",
+        "estimate": 2,
+        "branchName": null,
+        "state": { "name": "Todo" },
+        "relations": {
+          "nodes": [{ "type": "related", "relatedIssue": { "id": "i1" } }]
+        }
+      }
+    ]
+  }
+}
