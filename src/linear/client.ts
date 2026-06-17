@@ -3,6 +3,10 @@ import { Issue, Relation, RelationType } from "./types.js";
 
 const LINEAR_GRAPHQL = "https://api.linear.app/graphql";
 
+// NOTE (slice 1): fetches up to 250 issues with no cursor pagination. Slice 1
+// targets one project of 10-40 tickets, so this is safe. A project exceeding
+// 250 issues would be silently truncated — add cursor pagination + a truncation
+// warning before pointing this at large projects.
 const QUERY = `query($id: String!) {
   project(id: $id) {
     issues(first: 250) {

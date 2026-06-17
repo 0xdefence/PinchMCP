@@ -4,6 +4,13 @@ import { StubSource, sampleProject } from "../fixtures/stubSource.js";
 import { buildFeatureGraphTool } from "../../src/tools/buildFeatureGraph.js";
 import { rankKeystonesTool } from "../../src/tools/rankKeystones.js";
 import { explainBlockersTool } from "../../src/tools/explainBlockers.js";
+import { IssueSource, ProjectData } from "../../src/linear/source.js";
+
+class ThrowingSource implements IssueSource {
+  async fetchProject(_projectId: string): Promise<ProjectData> {
+    throw new Error("Project not found: bad-id");
+  }
+}
 
 const newCache = () => new GraphCache(new StubSource(sampleProject));
 
@@ -31,5 +38,11 @@ describe("tool handlers", () => {
   it("explain_blockers reports a missing ticket cleanly", async () => {
     const r = await explainBlockersTool(newCache(), "p1", "ENG-999");
     expect(r.text).toMatch(/not found/i);
+  });
+
+  it("propagates source errors so the MCP layer can surface them", async () => {
+    const cache = new GraphCache(new ThrowingSource());
+    await expect(buildFeatureGraphTool(cache, "bad-id")).rejects.toThrow(/Project not found/);
+    await expect(rankKeystonesTool(cache, "bad-id")).rejects.toThrow(/Project not found/);
   });
 });
