@@ -201,6 +201,16 @@ bottleneck graph proving these two metrics diverge.
 
 ---
 
+## Documentation
+
+- [`docs/ARCHITECTURE.md`](docs/ARCHITECTURE.md) — layers, modules, data types,
+  request flow, error handling, design decisions, and extension points.
+- [`docs/KEYSTONE-ALGORITHM.md`](docs/KEYSTONE-ALGORITHM.md) — the dominator
+  analysis in depth: why dominators beat reachability, the Cooper–Harvey–Kennedy
+  computation, leverage, edge cases, and complexity.
+
+---
+
 ## Develop
 
 ```bash
