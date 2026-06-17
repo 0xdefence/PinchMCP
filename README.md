@@ -1,32 +1,245 @@
 # PinchMCP
 
 An MCP server that finds the **keystone** ticket in a Linear feature — the one
-that, once done, unblocks the most downstream work — via dominator analysis of
-the blocking-relation graph.
+that, once done, unblocks the most downstream work — via **dominator analysis**
+of the dependency graph. It sits between Claude Code and Linear: it reads a
+project's issues and their blocking relations, fuses them into an in-memory
+graph, and tells you where the leverage is.
 
-This is slice 1: the explicit-graph path. Code-coupling inference comes later.
+> **Status — slice 1 (explicit-graph path).** This release proves the idea
+> end-to-end using Linear's *explicit* `blocked`/`blocking` relations only.
+> The inferred code-coupling layer (static import graph + git co-change) is on
+> the roadmap, not in this build. See [Roadmap](#roadmap).
 
-## Tools
+---
 
-- `build_feature_graph(project_id)` — fetch issues + relations, build the graph.
-- `rank_keystones(project_id)` — rank tickets by downstream leverage, with
-  plain-language explanations.
-- `explain_blockers(project_id, ticket_id)` — transitive blockers and unblocks
-  for one ticket.
+## What it does
 
-## Setup
+Two questions teams actually ask, with two distinct answers:
 
-1. `npm install`
-2. Copy `.env.example` to `.env` and set `LINEAR_API_KEY` (Linear → Settings →
-   Security & access → Personal API keys).
-3. `npm run build`
+- **Keystone** — *"What single ticket, once done, unblocks the most downstream
+  work?"* Answered by **dominator analysis**: a ticket is high-leverage when
+  every path to many downstream tickets must pass through it. This is *not* the
+  same as "the ticket that touches the most things" — a bottleneck that
+  gatekeeps 5 tickets beats a ticket that merely precedes 20 reachable ones.
+- **Blockers** — *"For this one ticket, what must finish first, and what does it
+  unblock?"* Answered by a transitive walk up and down the dependency chain.
 
-## Run
+**Explainability is the product.** Output says *why*: "every path to ENG-2,
+ENG-3 passes through ENG-1," not a bare score.
 
-The server speaks MCP over stdio. Register it with your MCP client (e.g. Claude
-Code) pointing at `dist/index.js`, with `LINEAR_API_KEY` set in the environment.
+### Tools exposed to Claude Code
+
+| Tool | Input | What it returns |
+|------|-------|-----------------|
+| `build_feature_graph` | `project_id` | Fetches issues + relations and (re)builds the cached graph. Reports issue/edge counts. |
+| `rank_keystones` | `project_id` | Tickets ranked by leverage (dominated-subtree size), with plain-language explanations, plus warnings (cycles) and ungrounded tickets. |
+| `explain_blockers` | `project_id`, `ticket_id` | Transitive blockers (must finish first) and downstream unblocks for one ticket. `ticket_id` accepts a Linear UUID or a human identifier like `ENG-12`. |
+
+---
+
+## Requirements
+
+- **Node.js 18 or newer** (the server uses the global `fetch`).
+- A **Linear account** and a **personal API key**.
+- **Claude Code** (or any MCP client that can launch a stdio server).
+
+---
+
+## Install
+
+```bash
+git clone https://github.com/0xdefence/PinchMCP.git
+cd PinchMCP
+npm install
+npm run build
+```
+
+`npm run build` compiles TypeScript to `dist/`. The server entrypoint is
+`dist/src/index.js`.
+
+Verify it built and starts (it should wait for stdio input, then exit cleanly on EOF):
+
+```bash
+LINEAR_API_KEY=dummy node dist/src/index.js < /dev/null && echo "starts OK"
+```
+
+With no key it should fail fast with a clear message:
+
+```bash
+node dist/src/index.js < /dev/null   # -> Error: LINEAR_API_KEY environment variable is required.
+```
+
+---
+
+## Get a Linear API key
+
+1. Linear → **Settings** → **Security & access** → **Personal API keys**.
+2. **Create key**, give it a name, copy the value (looks like `lin_api_…`).
+
+The key is passed to the server as the `LINEAR_API_KEY` environment variable.
+For local CLI use you can also copy `.env.example` to `.env` and set it there.
+
+> **Never commit your key.** `.env` is gitignored. The key grants access to your
+> Linear workspace.
+
+---
+
+## Find your `project_id`
+
+The tools take a Linear **project UUID**. The quickest way to list your projects
+and their ids, using the key from above:
+
+```bash
+curl -s https://api.linear.app/graphql \
+  -H "Authorization: $LINEAR_API_KEY" \
+  -H "Content-Type: application/json" \
+  -d '{"query":"{ projects(first: 50) { nodes { id name } } }"}' | jq
+```
+
+Each `id` in the output is a value you can pass as `project_id`.
+
+---
+
+## Connect it to Claude Code
+
+PinchMCP is a **stdio** MCP server. Point Claude Code at the built entrypoint
+with your API key in the environment.
+
+### Option A — project config file (recommended)
+
+Create `.mcp.json` in the root of the repo where you want to use it (or your home
+directory for global use):
+
+```json
+{
+  "mcpServers": {
+    "pinch-mcp": {
+      "command": "node",
+      "args": ["/absolute/path/to/PinchMCP/dist/src/index.js"],
+      "env": { "LINEAR_API_KEY": "lin_api_your_key_here" }
+    }
+  }
+}
+```
+
+Use the **absolute** path to `dist/src/index.js`. Restart Claude Code (or
+reconnect MCP servers) so it picks up the config.
+
+### Option B — Claude Code CLI
+
+```bash
+claude mcp add pinch-mcp \
+  -e LINEAR_API_KEY=lin_api_your_key_here \
+  -- node /absolute/path/to/PinchMCP/dist/src/index.js
+```
+
+### Verify the connection
+
+In Claude Code, run `/mcp` — you should see `pinch-mcp` connected with three
+tools. If it shows as failed, check: the path is absolute and points at
+`dist/src/index.js`, you ran `npm run build`, and `LINEAR_API_KEY` is set.
+
+---
+
+## Use it
+
+Once connected, just ask Claude Code in natural language — it will call the
+tools. Examples:
+
+- *"Build the feature graph for project `<project_id>` and rank the keystones."*
+- *"Which ticket is the biggest bottleneck in `<project_id>`?"*
+- *"What's blocking ENG-42, and what does it unblock?"*
+
+Claude Code decides when to call `build_feature_graph`, `rank_keystones`, and
+`explain_blockers`, and explains the results using the tool output.
+
+---
+
+## How it works
+
+```
+Claude Code ──tool call──▶ PinchMCP (stdio)
+                              │
+              config ─▶ LinearGraphQLSource ──GraphQL──▶ api.linear.app
+                              │
+                         GraphCache (per project_id)
+                              │
+                       buildFeatureGraph
+                       (normalize blocks/blocked_by → canonical edges)
+                              │
+              ┌───────────────┴───────────────┐
+        rankKeystones                   explainBlockers
+   (dominator tree, leverage)       (transitive chain walk)
+              │                               │
+        explainable text ◀── tool handlers ──▶ explainable text
+```
+
+- **Linear layer** (`src/linear/`) — a GraphQL client behind an `IssueSource`
+  interface (the seam where a future MCP-to-MCP client could slot in), plus
+  normalization of raw payloads into domain `Issue`/`Relation` types.
+- **Graph layer** (`src/graph/`) — pure, I/O-free functions:
+  - `buildFeatureGraph` normalizes `blocks`/`blocked_by` into one canonical
+    "A unblocks B" edge direction, de-dups, drops out-of-project and self
+    edges, and keeps `related`/`duplicate` as side metadata.
+  - `rankKeystones` adds a virtual entry node to all unblocked tickets, computes
+    a **dominator tree** (Cooper-Harvey-Kennedy), and sets each ticket's
+    *leverage* to the size of its dominated subtree.
+  - `explainBlockers` walks predecessors/successors transitively.
+- **Cache** (`src/cache.ts`) — one built graph per `project_id`;
+  `build_feature_graph` forces a refresh.
+- **Tools** (`src/tools/`) — thin formatters turning graph results into
+  human-readable, explainable output.
+
+### Why dominators, not reachability
+
+A node's *reachable descendants* counts everything downstream, including work
+reachable by other paths too. A *dominator* is stricter: ticket X dominates
+ticket Y only if **every** path to Y passes through X. That's the real
+"if this slips, everything behind it slips" signal. The test suite includes a
+bottleneck graph proving these two metrics diverge.
+
+---
 
 ## Develop
 
-- `npm test` — run the test suite.
-- `npm run dev` — run from source via tsx.
+```bash
+npm test        # full vitest suite (39 tests)
+npm run dev     # run from source via tsx (no build step)
+npm run build   # compile to dist/ (emits src only, via tsconfig.build.json)
+```
+
+The graph algorithms are pure functions tested against synthetic fixtures with
+hand-computed dominator trees; the Linear adapter is tested against a recorded
+JSON fixture — no live API calls in the test suite.
+
+---
+
+## Roadmap
+
+Slice 1 is the explicit-graph proof. Planned next:
+
+- **Inferred code-coupling graph** — map tickets → code via `branchName` and
+  commit/PR references, then code → code via a tree-sitter/SCIP static import
+  graph plus git co-change history. This is the valuable half; explicit Linear
+  relations are sparse and lossy.
+- **`critical_path`** — weighted CPM over estimates ("what sets total duration"),
+  surfaced alongside keystone ("max leverage unlock").
+- **Cold-start semantic matching** — for future tickets with no code yet, match
+  ticket text against the symbol index so the graph is useful before branches
+  land.
+- **LLM-extracted edge enrichment (GraphRAG-style)** — mine ticket
+  descriptions, comments, and PR text for dependencies Linear doesn't record
+  explicitly, shipped as *suggestions to confirm*, never auto-asserted.
+- **Linear cursor pagination** — slice 1 fetches up to 250 issues; large
+  projects need pagination + a truncation warning.
+
+---
+
+## Known limitations (slice 1)
+
+- Fetches up to **250 issues** per project with no pagination; larger projects
+  are silently truncated (warning is a tracked follow-up).
+- `explain_blockers` doesn't annotate cycles, though `rank_keystones` does.
+- Inferred direction from code coupling is *not* here yet — this slice uses only
+  Linear's explicit, human-asserted relations.
