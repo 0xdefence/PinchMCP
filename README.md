@@ -13,6 +13,63 @@ graph, and tells you where the leverage is.
 
 ---
 
+## Running locally (quickstart)
+
+**There is nothing to deploy.** PinchMCP is a [stdio](https://modelcontextprotocol.io/docs/concepts/transports)
+MCP server: Claude Code launches it as a local subprocess on demand and talks to
+it over stdin/stdout. "Running it" just means the built code lives on the machine
+where you run Claude Code — no port, no daemon, no hosting. Each developer who
+wants it does this once on their own machine, with their own Linear key.
+
+End to end:
+
+```bash
+# 1. Get the code and build it (needs Node 18+)
+git clone https://github.com/0xdefence/PinchMCP.git
+cd PinchMCP
+npm install
+npm run build
+```
+
+```bash
+# 2. Get a Linear personal API key
+#    Linear → Settings → Security & access → Personal API keys → Create key
+#    (copy the lin_api_… value)
+
+# 3. Find the project_id you want to analyze
+curl -s https://api.linear.app/graphql \
+  -H "Authorization: lin_api_your_key" \
+  -H "Content-Type: application/json" \
+  -d '{"query":"{ projects(first: 50) { nodes { id name } } }"}'
+```
+
+```jsonc
+// 4. Register the server with Claude Code.
+//    Create .mcp.json in your project root (or ~/), using the ABSOLUTE path
+//    to dist/src/index.js printed by `pwd`:
+{
+  "mcpServers": {
+    "pinch-mcp": {
+      "command": "node",
+      "args": ["/absolute/path/to/PinchMCP/dist/src/index.js"],
+      "env": { "LINEAR_API_KEY": "lin_api_your_key" }
+    }
+  }
+}
+```
+
+```text
+5. Restart Claude Code, run /mcp to confirm "pinch-mcp" is connected,
+   then ask: "Rank the keystones for Linear project <project_id>."
+```
+
+Each step is expanded in the sections below
+([Install](#install) · [API key](#get-a-linear-api-key) ·
+[project_id](#find-your-project_id) ·
+[Connect to Claude Code](#connect-it-to-claude-code) · [Use it](#use-it)).
+
+---
+
 ## What it does
 
 Two questions teams actually ask, with two distinct answers:
