@@ -34,3 +34,25 @@ export interface KeystoneRanking {
   warnings: string[];
   isolated: string[]; // node ids with no blocking edges
 }
+
+export interface CriticalPathNode {
+  id: string;
+  identifier: string;
+  title: string;
+  duration: number; // estimate, or 1 when unestimated
+  estimated: boolean; // false when the duration was defaulted
+  earliestStart: number;
+  earliestFinish: number;
+  latestStart: number;
+  latestFinish: number;
+  slack: number; // latestStart - earliestStart; 0 => on the critical path
+  critical: boolean;
+}
+
+export interface CriticalPath {
+  totalDuration: number;
+  path: string[]; // identifiers along one critical (zero-slack) chain, in order
+  nodes: CriticalPathNode[]; // every scheduled node with its CPM fields
+  defaulted: string[]; // identifiers whose estimate was defaulted to 1
+  warnings: string[];
+}

@@ -72,13 +72,17 @@ Each step is expanded in the sections below
 
 ## What it does
 
-Two questions teams actually ask, with two distinct answers:
+Questions teams actually ask, with distinct answers:
 
 - **Keystone** — *"What single ticket, once done, unblocks the most downstream
   work?"* Answered by **dominator analysis**: a ticket is high-leverage when
   every path to many downstream tickets must pass through it. This is *not* the
   same as "the ticket that touches the most things" — a bottleneck that
   gatekeeps 5 tickets beats a ticket that merely precedes 20 reachable ones.
+- **Critical path** — *"What sets the total timeline?"* Answered by **CPM** over
+  estimates: the longest-duration dependency chain, plus how much slack every
+  other ticket has. Distinct from keystone — max-leverage unlock vs. what sets
+  duration.
 - **Blockers** — *"For this one ticket, what must finish first, and what does it
   unblock?"* Answered by a transitive walk up and down the dependency chain.
 
@@ -92,9 +96,10 @@ ENG-3 passes through ENG-1," not a bare score.
 | `list_projects` | _(none)_ | Lists the workspace's projects with their ids and URL slugs, so you can pick a `project_id`. Linear's lookup needs a UUID or slug, not a display name. |
 | `build_feature_graph` | `project_id` | Fetches issues + relations and (re)builds the cached graph. Reports issue/edge counts. |
 | `rank_keystones` | `project_id` | Tickets ranked by leverage (dominated-subtree size), with plain-language explanations, plus warnings (cycles) and ungrounded tickets. |
+| `critical_path` | `project_id` | CPM over estimates: the longest-duration chain that sets the timeline, plus per-ticket slack. Answers "what sets total duration" (vs keystones' "max leverage unlock"). Unestimated tickets default to 1. |
 | `explain_blockers` | `project_id`, `ticket_id` | Transitive blockers (must finish first) and downstream unblocks for one ticket. `ticket_id` accepts a Linear UUID or a human identifier like `ENG-12`. |
 
-Across all three analysis tools, **`project_id` accepts a Linear project name,
+Across the analysis tools, **`project_id` accepts a Linear project name,
 URL slug, or UUID** — it's resolved internally, so you can speak in names
 (*"rank keystones for 0xDefence"*) and PinchMCP maps it to the right project.
 

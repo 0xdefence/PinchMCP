@@ -35,14 +35,16 @@ relations.
 - ✅ Cursor pagination of the Linear fetch (stays under the 10k complexity cap)
 - ✅ Hardening — dependency/security updates, Node 22+, `noEmitOnError`, docs
 
-## Phase II — Code grounding ⬜ (the valuable half)
+## Phase II — Code grounding 🟡 (the valuable half)
 
 Move beyond human-asserted Linear links to *inferred* coupling, and add the
 duration view. Direction inference is the weak link, so inferred edges ship as
 **suggestions to confirm**, never auto-asserted.
 
-- ⬜ `critical_path` tool — weighted CPM over estimates ("what sets total
-  duration"), surfaced alongside keystone ("max leverage unlock")
+- ✅ `critical_path` tool — node-weighted CPM over estimates ("what sets total
+  duration"), surfaced alongside keystone ("max leverage unlock"). Full CPM:
+  earliest/latest start, slack per ticket, zero-slack critical chain;
+  unestimated tickets default to duration 1 (reported)
 - ⬜ Ticket → code mapping — via `branchName` + commit/PR references to issue ids
 - ⬜ Code → code dependency — tree-sitter/SCIP static import graph (hard edges)
 - ⬜ Git **co-change** matrix — hidden coupling from files that change together
@@ -80,5 +82,5 @@ structured output.
 
 ---
 
-_Last updated as of the `list_projects` + fuzzy-resolution work. Phase I is
-complete; Phases II and III are not started._
+_Phase I is complete. Phase II has started with `critical_path` (II-a); the
+code-grounding subsystem (II-b) and Phase III are not started._

@@ -8,6 +8,7 @@ import { GraphCache } from "./cache.js";
 import { buildFeatureGraphTool, ToolResult } from "./tools/buildFeatureGraph.js";
 import { rankKeystonesTool } from "./tools/rankKeystones.js";
 import { explainBlockersTool } from "./tools/explainBlockers.js";
+import { criticalPathTool } from "./tools/criticalPath.js";
 import { listProjectsTool } from "./tools/listProjects.js";
 
 function textResult(r: ToolResult) {
@@ -61,6 +62,20 @@ async function main() {
     async ({ project_id }) => {
       const id = await resolveProjectId(source, project_id);
       return textResult(await rankKeystonesTool(cache, id));
+    }
+  );
+
+  server.registerTool(
+    "critical_path",
+    {
+      title: "Critical path (CPM)",
+      description:
+        "Compute the critical path via CPM over ticket estimates: the longest-duration chain that sets the timeline, plus slack per ticket. Answers 'what sets total duration' (vs rank_keystones' 'max leverage unlock'). project_id accepts a project name, URL slug, or UUID.",
+      inputSchema: { project_id: projectId },
+    },
+    async ({ project_id }) => {
+      const id = await resolveProjectId(source, project_id);
+      return textResult(await criticalPathTool(cache, id));
     }
   );
 

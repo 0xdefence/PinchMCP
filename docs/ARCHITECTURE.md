@@ -6,7 +6,7 @@ keystone algorithm itself, see [KEYSTONE-ALGORITHM.md](./KEYSTONE-ALGORITHM.md).
 ## Overview
 
 PinchMCP is a stdio [MCP](https://modelcontextprotocol.io) server. An MCP client
-(Claude Code) launches it as a subprocess and calls its four tools. The server
+(Claude Code) launches it as a subprocess and calls its five tools. The server
 fetches a Linear project's issues + blocking relations, builds an in-memory
 directed graph, and runs deterministic graph algorithms over it. There is no
 LLM, no embedding, and no persistence inside the server — it is a pure analysis
@@ -47,9 +47,9 @@ rank_keystones(project_id)
 ```
 
 `build_feature_graph` is the only tool that forces a rebuild
-(`GraphCache.rebuild`); `rank_keystones` and `explain_blockers` reuse the cached
-graph, and `list_projects` bypasses the cache entirely (it calls the source
-directly and never builds a graph).
+(`GraphCache.rebuild`); `rank_keystones`, `critical_path`, and `explain_blockers`
+reuse the cached graph, and `list_projects` bypasses the cache entirely (it calls
+the source directly and never builds a graph).
 
 ## Layers
 
@@ -96,6 +96,7 @@ tested against synthetic fixtures.
 | `types.ts` | Graph + result data types | `GraphNode`, `Edge`, `FeatureGraph`, `KeystoneEntry`, `KeystoneRanking` |
 | `build.ts` | Issues + relations → directed graph | `buildFeatureGraph` |
 | `keystone.ts` | Dominator-based leverage ranking | `rankKeystones` |
+| `criticalPath.ts` | Node-weighted CPM (earliest/latest, slack, critical chain) | `criticalPath` |
 | `blockers.ts` | Transitive blocker/unblock walk | `explainBlockers`, `BlockerExplanation` |
 
 ### Cache — `src/cache.ts`
@@ -118,8 +119,9 @@ project, tens of tickets). There is no TTL or invalidation beyond an explicit
 
 `src/tools/*` are thin handlers: resolve the graph from the cache (or, for
 `list_projects`, call the source directly), call one pure function, and format an
-explainable `ToolResult`. No graph logic lives here. The four tools are
-`list_projects`, `build_feature_graph`, `rank_keystones`, and `explain_blockers`.
+explainable `ToolResult`. No graph logic lives here. The five tools are
+`list_projects`, `build_feature_graph`, `rank_keystones`, `critical_path`, and
+`explain_blockers`.
 
 ```ts
 interface ToolResult {
@@ -129,7 +131,7 @@ interface ToolResult {
 ```
 
 `src/index.ts` constructs the dependency chain (`config → LinearGraphQLSource →
-GraphCache`), registers the four tools on an `McpServer` with zod input schemas,
+GraphCache`), registers the five tools on an `McpServer` with zod input schemas,
 and connects a `StdioServerTransport`. `src/config.ts` reads and validates
 `LINEAR_API_KEY`, failing fast at startup if it is missing.
 

@@ -4,6 +4,7 @@ import { StubSource, sampleProject } from "../fixtures/stubSource.js";
 import { buildFeatureGraphTool } from "../../src/tools/buildFeatureGraph.js";
 import { rankKeystonesTool } from "../../src/tools/rankKeystones.js";
 import { explainBlockersTool } from "../../src/tools/explainBlockers.js";
+import { criticalPathTool } from "../../src/tools/criticalPath.js";
 import { listProjectsTool } from "../../src/tools/listProjects.js";
 import { IssueSource, ProjectData, ProjectSummary } from "../../src/linear/source.js";
 
@@ -48,6 +49,14 @@ describe("tool handlers", () => {
     const cache = new GraphCache(new ThrowingSource());
     await expect(buildFeatureGraphTool(cache, "bad-id")).rejects.toThrow(/Project not found/);
     await expect(rankKeystonesTool(cache, "bad-id")).rejects.toThrow(/Project not found/);
+  });
+
+  it("critical_path reports total duration, a path, and defaulted estimates", async () => {
+    // sampleProject has no estimates, so each ticket defaults to duration 1.
+    const r = await criticalPathTool(newCache(), "p1");
+    expect(r.text).toMatch(/total duration 2 unit/);
+    expect(r.text).toMatch(/ENG-1/);
+    expect(r.text).toMatch(/counted as 1/i);
   });
 
   it("list_projects lists projects with ids and slugs", async () => {
