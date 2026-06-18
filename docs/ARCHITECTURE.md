@@ -6,7 +6,7 @@ keystone algorithm itself, see [KEYSTONE-ALGORITHM.md](./KEYSTONE-ALGORITHM.md).
 ## Overview
 
 PinchMCP is a stdio [MCP](https://modelcontextprotocol.io) server. An MCP client
-(Claude Code) launches it as a subprocess and calls its three tools. The server
+(Claude Code) launches it as a subprocess and calls its four tools. The server
 fetches a Linear project's issues + blocking relations, builds an in-memory
 directed graph, and runs deterministic graph algorithms over it. There is no
 LLM, no embedding, and no persistence inside the server — it is a pure analysis
@@ -47,7 +47,9 @@ rank_keystones(project_id)
 ```
 
 `build_feature_graph` is the only tool that forces a rebuild
-(`GraphCache.rebuild`); the other two reuse the cached graph.
+(`GraphCache.rebuild`); `rank_keystones` and `explain_blockers` reuse the cached
+graph, and `list_projects` bypasses the cache entirely (it calls the source
+directly and never builds a graph).
 
 ## Layers
 
@@ -59,14 +61,15 @@ never sees GraphQL.
 | File | Responsibility | Key exports |
 |------|----------------|-------------|
 | `types.ts` | Normalized domain model | `Issue`, `Relation`, `RelationType` |
-| `source.ts` | The data-source contract (swap seam) | `IssueSource`, `ProjectData` |
+| `source.ts` | The data-source contract (swap seam) | `IssueSource`, `ProjectData`, `ProjectSummary` |
 | `client.ts` | Linear GraphQL implementation + payload normalization | `LinearGraphQLSource`, `normalizeProject` |
 
-`IssueSource` is a one-method interface:
+`IssueSource` is a two-method interface:
 
 ```ts
 interface IssueSource {
-  fetchProject(projectId: string): Promise<ProjectData>; // { issues, relations }
+  fetchProject(projectId: string): Promise<ProjectData>;   // { issues, relations }
+  listProjects(): Promise<ProjectSummary[]>;               // { id, name, slugId }[]
 }
 ```
 
@@ -113,9 +116,10 @@ project, tens of tickets). There is no TTL or invalidation beyond an explicit
 
 ### Tools + server — `src/tools/`, `src/index.ts`, `src/config.ts`
 
-`src/tools/*` are thin handlers: resolve the graph from the cache, call one pure
-graph function, and format an explainable `ToolResult`. No graph logic lives
-here.
+`src/tools/*` are thin handlers: resolve the graph from the cache (or, for
+`list_projects`, call the source directly), call one pure function, and format an
+explainable `ToolResult`. No graph logic lives here. The four tools are
+`list_projects`, `build_feature_graph`, `rank_keystones`, and `explain_blockers`.
 
 ```ts
 interface ToolResult {
@@ -125,7 +129,7 @@ interface ToolResult {
 ```
 
 `src/index.ts` constructs the dependency chain (`config → LinearGraphQLSource →
-GraphCache`), registers the three tools on an `McpServer` with zod input schemas,
+GraphCache`), registers the four tools on an `McpServer` with zod input schemas,
 and connects a `StdioServerTransport`. `src/config.ts` reads and validates
 `LINEAR_API_KEY`, failing fast at startup if it is missing.
 

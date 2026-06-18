@@ -1,11 +1,19 @@
-import { IssueSource, ProjectData } from "../../src/linear/source.js";
+import { IssueSource, ProjectData, ProjectSummary } from "../../src/linear/source.js";
 
 export class StubSource implements IssueSource {
   public calls = 0;
-  constructor(private data: ProjectData) {}
+  constructor(
+    private data: ProjectData,
+    private projects: ProjectSummary[] = [
+      { id: "p1", name: "Sample Project", slugId: "sample-abc123" },
+    ]
+  ) {}
   async fetchProject(_projectId: string): Promise<ProjectData> {
     this.calls++;
     return this.data;
+  }
+  async listProjects(): Promise<ProjectSummary[]> {
+    return this.projects;
   }
 }
 

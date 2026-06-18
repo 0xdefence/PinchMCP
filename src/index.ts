@@ -7,6 +7,7 @@ import { GraphCache } from "./cache.js";
 import { buildFeatureGraphTool, ToolResult } from "./tools/buildFeatureGraph.js";
 import { rankKeystonesTool } from "./tools/rankKeystones.js";
 import { explainBlockersTool } from "./tools/explainBlockers.js";
+import { listProjectsTool } from "./tools/listProjects.js";
 
 function textResult(r: ToolResult) {
   return { content: [{ type: "text" as const, text: r.text }] };
@@ -18,6 +19,17 @@ async function main() {
   const cache = new GraphCache(source);
 
   const server = new McpServer({ name: "pinch-mcp", version: "0.1.0" });
+
+  server.registerTool(
+    "list_projects",
+    {
+      title: "List Linear projects",
+      description:
+        "List the workspace's Linear projects with their ids and slugs, so a project_id can be chosen. Linear's project lookup needs a UUID or URL slug, not a display name.",
+      inputSchema: {},
+    },
+    async () => textResult(await listProjectsTool(source))
+  );
 
   server.registerTool(
     "build_feature_graph",

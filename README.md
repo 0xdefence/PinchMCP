@@ -89,6 +89,7 @@ ENG-3 passes through ENG-1," not a bare score.
 
 | Tool | Input | What it returns |
 |------|-------|-----------------|
+| `list_projects` | _(none)_ | Lists the workspace's projects with their ids and URL slugs, so you can pick a `project_id`. Linear's lookup needs a UUID or slug, not a display name. |
 | `build_feature_graph` | `project_id` | Fetches issues + relations and (re)builds the cached graph. Reports issue/edge counts. |
 | `rank_keystones` | `project_id` | Tickets ranked by leverage (dominated-subtree size), with plain-language explanations, plus warnings (cycles) and ungrounded tickets. |
 | `explain_blockers` | `project_id`, `ticket_id` | Transitive blockers (must finish first) and downstream unblocks for one ticket. `ticket_id` accepts a Linear UUID or a human identifier like `ENG-12`. |
@@ -145,17 +146,24 @@ For local CLI use you can also copy `.env.example` to `.env` and set it there.
 
 ## Find your `project_id`
 
-The tools take a Linear **project UUID**. The quickest way to list your projects
-and their ids, using the key from above:
+The analysis tools take a Linear **project UUID** or the **URL slug** — *not* a
+display name (Linear's `project(id:)` lookup rejects names). Three ways to get a
+valid value:
+
+1. **Ask Claude Code** once the server is connected: *"list my Linear projects"*
+   runs the `list_projects` tool and prints every project with its id and slug.
+2. **From the project URL** — `linear.app/<workspace>/project/<name>-<slugId>`.
+   Paste the whole `<name>-<slugId>` slug or just the trailing hex; both work.
+3. **Via curl**:
 
 ```bash
 curl -s https://api.linear.app/graphql \
   -H "Authorization: $LINEAR_API_KEY" \
   -H "Content-Type: application/json" \
-  -d '{"query":"{ projects(first: 50) { nodes { id name } } }"}' | jq
+  -d '{"query":"{ projects(first: 50) { nodes { id name slugId } } }"}' | jq
 ```
 
-Each `id` in the output is a value you can pass as `project_id`.
+Any `id` or `slugId` from the output works as `project_id`.
 
 ---
 

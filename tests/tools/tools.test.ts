@@ -4,11 +4,15 @@ import { StubSource, sampleProject } from "../fixtures/stubSource.js";
 import { buildFeatureGraphTool } from "../../src/tools/buildFeatureGraph.js";
 import { rankKeystonesTool } from "../../src/tools/rankKeystones.js";
 import { explainBlockersTool } from "../../src/tools/explainBlockers.js";
-import { IssueSource, ProjectData } from "../../src/linear/source.js";
+import { listProjectsTool } from "../../src/tools/listProjects.js";
+import { IssueSource, ProjectData, ProjectSummary } from "../../src/linear/source.js";
 
 class ThrowingSource implements IssueSource {
   async fetchProject(_projectId: string): Promise<ProjectData> {
     throw new Error("Project not found: bad-id");
+  }
+  async listProjects(): Promise<ProjectSummary[]> {
+    throw new Error("Linear API error 500");
   }
 }
 
@@ -44,5 +48,17 @@ describe("tool handlers", () => {
     const cache = new GraphCache(new ThrowingSource());
     await expect(buildFeatureGraphTool(cache, "bad-id")).rejects.toThrow(/Project not found/);
     await expect(rankKeystonesTool(cache, "bad-id")).rejects.toThrow(/Project not found/);
+  });
+
+  it("list_projects lists projects with ids and slugs", async () => {
+    const r = await listProjectsTool(new StubSource(sampleProject));
+    expect(r.text).toMatch(/Sample Project/);
+    expect(r.text).toMatch(/id: p1/);
+    expect(r.text).toMatch(/slug: sample-abc123/);
+  });
+
+  it("list_projects reports an empty workspace cleanly", async () => {
+    const r = await listProjectsTool(new StubSource(sampleProject, []));
+    expect(r.text).toMatch(/No Linear projects found/);
   });
 });

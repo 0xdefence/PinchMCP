@@ -1,4 +1,4 @@
-import { IssueSource, ProjectData } from "./source.js";
+import { IssueSource, ProjectData, ProjectSummary } from "./source.js";
 import { Issue, Relation, RelationType } from "./types.js";
 
 const LINEAR_GRAPHQL = "https://api.linear.app/graphql";
@@ -29,9 +29,18 @@ const QUERY = `query($id: String!, $after: String) {
   }
 }`;
 
-interface IssuesPage {
+const PROJECTS_PAGE_SIZE = 100;
+
+const PROJECTS_QUERY = `query($after: String) {
+  projects(first: ${PROJECTS_PAGE_SIZE}, after: $after) {
+    pageInfo { hasNextPage endCursor }
+    nodes { id name slugId }
+  }
+}`;
+
+interface Page<T> {
   pageInfo?: { hasNextPage?: boolean; endCursor?: string | null };
-  nodes?: unknown[];
+  nodes?: T[];
 }
 
 export class LinearGraphQLSource implements IssueSource {
@@ -41,59 +50,76 @@ export class LinearGraphQLSource implements IssueSource {
   ) {}
 
   async fetchProject(projectId: string): Promise<ProjectData> {
-    const nodes: unknown[] = [];
+    const nodes = await this.paginate<unknown>(
+      (after) =>
+        this.post(QUERY, { id: projectId, after }).then((data) => {
+          if (!data?.project) {
+            throw new Error(`Project not found: ${projectId}`);
+          }
+          return (data.project.issues ?? { nodes: [] }) as Page<unknown>;
+        }),
+      `project ${projectId} issue list`
+    );
+    // Assemble the full graph from every page's nodes.
+    return normalizeProject({ issues: { nodes } });
+  }
+
+  async listProjects(): Promise<ProjectSummary[]> {
+    const nodes = await this.paginate<any>(
+      (after) =>
+        this.post(PROJECTS_QUERY, { after }).then(
+          (data) => (data?.projects ?? { nodes: [] }) as Page<any>
+        ),
+      "project list"
+    );
+    return nodes.map((n) => ({
+      id: n.id,
+      name: n.name,
+      slugId: n.slugId ?? null,
+    }));
+  }
+
+  // Walk a cursor-paginated connection, accumulating every page's nodes.
+  private async paginate<T>(
+    fetchPage: (after: string | null) => Promise<Page<T>>,
+    label: string
+  ): Promise<T[]> {
+    const out: T[] = [];
     let after: string | null = null;
-
     for (let page = 0; page < MAX_PAGES; page++) {
-      const issues = await this.fetchPage(projectId, after);
-      nodes.push(...(issues.nodes ?? []));
-
-      if (!issues.pageInfo?.hasNextPage) {
-        // Assemble the full graph from every page's nodes.
-        return normalizeProject({ issues: { nodes } });
-      }
-      const next = issues.pageInfo.endCursor;
-      if (!next || next === after) {
-        // hasNextPage but no usable cursor — stop rather than loop forever.
-        return normalizeProject({ issues: { nodes } });
-      }
+      const conn = await fetchPage(after);
+      out.push(...(conn.nodes ?? []));
+      const next = conn.pageInfo?.endCursor;
+      // Stop on the last page, or if the cursor can't advance (avoids looping).
+      if (!conn.pageInfo?.hasNextPage || !next || next === after) return out;
       after = next;
     }
-
     throw new Error(
-      `Linear project ${projectId} exceeds ${MAX_PAGES * ISSUE_PAGE_SIZE} issues; aborting pagination.`
+      `${label} exceeds ${MAX_PAGES} pages; aborting pagination.`
     );
   }
 
-  private async fetchPage(
-    projectId: string,
-    after: string | null
-  ): Promise<IssuesPage> {
+  // Single GraphQL POST with shared HTTP + error handling. Returns `data`.
+  private async post(
+    query: string,
+    variables: Record<string, unknown>
+  ): Promise<any> {
     const res = await this.fetchFn(LINEAR_GRAPHQL, {
       method: "POST",
       headers: {
         "Content-Type": "application/json",
         Authorization: this.apiKey,
       },
-      body: JSON.stringify({
-        query: QUERY,
-        variables: { id: projectId, after },
-      }),
+      body: JSON.stringify({ query, variables }),
     });
     if (!res.ok) {
       throw new Error(`Linear API error ${res.status}: ${await res.text()}`);
     }
-    const json = (await res.json()) as {
-      data?: { project?: { issues?: IssuesPage } };
-      errors?: unknown;
-    };
+    const json = (await res.json()) as { data?: any; errors?: unknown };
     if (json.errors) {
       throw new Error(`Linear GraphQL error: ${JSON.stringify(json.errors)}`);
     }
-    if (!json.data?.project) {
-      throw new Error(`Project not found: ${projectId}`);
-    }
-    return json.data.project.issues ?? { nodes: [] };
+    return json.data;
   }
 }
 
