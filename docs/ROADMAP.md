@@ -45,16 +45,21 @@ duration view. Direction inference is the weak link, so inferred edges ship as
   duration"), surfaced alongside keystone ("max leverage unlock"). Full CPM:
   earliest/latest start, slack per ticket, zero-slack critical chain;
   unestimated tickets default to duration 1 (reported)
+**II-b — inferred code coupling** (design locked, see
+[`PHASE-II-CODE-GROUNDING.md`](./PHASE-II-CODE-GROUNDING.md)). Decisions: single
+repo 1:1 with the project; file-level import graph via a TS/JS grapher + git
+co-change (SCIP/tree-sitter deferred); inferred edges surface through a separate
+`suggest_links` tool, scored and evidence-carrying, undirected unless
+import-derived, **never folded into keystone/CPM**.
+
 - ⬜ Ticket → code mapping — via `branchName` + commit/PR references to issue ids
-- ⬜ Code → code dependency — tree-sitter/SCIP static import graph (hard edges)
+- ⬜ Code → code dependency — resolved file-level import graph (TS/JS first)
 - ⬜ Git **co-change** matrix — hidden coupling from files that change together
-- ⬜ Project-coupling fusion — fold inferred edges into the existing `FeatureGraph`
+- ⬜ `suggest_links` tool — scored candidate ticket↔ticket edges with evidence
 - ⬜ Cold-start semantic matching — match ticket text against the symbol index so
   future tickets with no code yet still place in the graph
 - ⬜ GraphRAG-style edge enrichment — LLM-extract implicit dependencies from
   ticket descriptions / comments / PR text (suggestions only)
-- ⬜ Inferred-edge confirm UX — inferred edges tagged distinct from explicit ones,
-  human-confirmable
 - ⬜ MCP-to-MCP passthrough — implement `IssueSource` against the official Linear
   MCP and swap it in (seam already in place)
 - ⬜ Whole-org scope — beyond one project (10–40 tickets) to cross-project/org
