@@ -24,7 +24,7 @@ wants it does this once on their own machine, with their own Linear key.
 End to end:
 
 ```bash
-# 1. Get the code and build it (needs Node 18+)
+# 1. Get the code and build it (needs Node 22+)
 git clone https://github.com/0xdefence/PinchMCP.git
 cd PinchMCP
 npm install
@@ -97,7 +97,8 @@ ENG-3 passes through ENG-1," not a bare score.
 
 ## Requirements
 
-- **Node.js 18 or newer** (the server uses the global `fetch`).
+- **Node.js 22 or newer** (active LTS; Node 18 is end-of-life). The server uses
+  the global `fetch`.
 - A **Linear account** and a **personal API key**.
 - **Claude Code** (or any MCP client that can launch a stdio server).
 
