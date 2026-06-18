@@ -3,6 +3,7 @@ import { StdioServerTransport } from "@modelcontextprotocol/sdk/server/stdio.js"
 import { z } from "zod";
 import { loadConfig } from "./config.js";
 import { LinearGraphQLSource } from "./linear/client.js";
+import { resolveProjectId } from "./linear/resolveProject.js";
 import { GraphCache } from "./cache.js";
 import { buildFeatureGraphTool, ToolResult } from "./tools/buildFeatureGraph.js";
 import { rankKeystonesTool } from "./tools/rankKeystones.js";
@@ -31,16 +32,22 @@ async function main() {
     async () => textResult(await listProjectsTool(source))
   );
 
+  const projectId = z
+    .string()
+    .describe("Linear project name, URL slug, or UUID");
+
   server.registerTool(
     "build_feature_graph",
     {
       title: "Build feature graph",
       description:
-        "Fetch a Linear project's issues and blocking relations and (re)build the in-memory dependency graph.",
-      inputSchema: { project_id: z.string() },
+        "Fetch a Linear project's issues and blocking relations and (re)build the in-memory dependency graph. project_id accepts a project name, URL slug, or UUID.",
+      inputSchema: { project_id: projectId },
     },
-    async ({ project_id }) =>
-      textResult(await buildFeatureGraphTool(cache, project_id))
+    async ({ project_id }) => {
+      const id = await resolveProjectId(source, project_id);
+      return textResult(await buildFeatureGraphTool(cache, id));
+    }
   );
 
   server.registerTool(
@@ -48,11 +55,13 @@ async function main() {
     {
       title: "Rank keystone tickets",
       description:
-        "Rank tickets by leverage: how much downstream work each one gatekeeps, via dominator analysis of the blocking graph.",
-      inputSchema: { project_id: z.string() },
+        "Rank tickets by leverage: how much downstream work each one gatekeeps, via dominator analysis of the blocking graph. project_id accepts a project name, URL slug, or UUID.",
+      inputSchema: { project_id: projectId },
     },
-    async ({ project_id }) =>
-      textResult(await rankKeystonesTool(cache, project_id))
+    async ({ project_id }) => {
+      const id = await resolveProjectId(source, project_id);
+      return textResult(await rankKeystonesTool(cache, id));
+    }
   );
 
   server.registerTool(
@@ -60,11 +69,13 @@ async function main() {
     {
       title: "Explain a ticket's blockers",
       description:
-        "Show what transitively blocks a ticket and what it transitively unblocks.",
-      inputSchema: { project_id: z.string(), ticket_id: z.string() },
+        "Show what transitively blocks a ticket and what it transitively unblocks. project_id accepts a project name, URL slug, or UUID.",
+      inputSchema: { project_id: projectId, ticket_id: z.string() },
     },
-    async ({ project_id, ticket_id }) =>
-      textResult(await explainBlockersTool(cache, project_id, ticket_id))
+    async ({ project_id, ticket_id }) => {
+      const id = await resolveProjectId(source, project_id);
+      return textResult(await explainBlockersTool(cache, id, ticket_id));
+    }
   );
 
   await server.connect(new StdioServerTransport());

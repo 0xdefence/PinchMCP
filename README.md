@@ -94,6 +94,10 @@ ENG-3 passes through ENG-1," not a bare score.
 | `rank_keystones` | `project_id` | Tickets ranked by leverage (dominated-subtree size), with plain-language explanations, plus warnings (cycles) and ungrounded tickets. |
 | `explain_blockers` | `project_id`, `ticket_id` | Transitive blockers (must finish first) and downstream unblocks for one ticket. `ticket_id` accepts a Linear UUID or a human identifier like `ENG-12`. |
 
+Across all three analysis tools, **`project_id` accepts a Linear project name,
+URL slug, or UUID** — it's resolved internally, so you can speak in names
+(*"rank keystones for 0xDefence"*) and PinchMCP maps it to the right project.
+
 ---
 
 ## Requirements
@@ -274,13 +278,16 @@ bottleneck graph proving these two metrics diverge.
 - [`docs/KEYSTONE-ALGORITHM.md`](docs/KEYSTONE-ALGORITHM.md) — the dominator
   analysis in depth: why dominators beat reachability, the Cooper–Harvey–Kennedy
   computation, leverage, edge cases, and complexity.
+- [`docs/ROADMAP.md`](docs/ROADMAP.md) — what's shipped vs. planned across
+  Phase I (explicit graph), Phase II (code grounding), and Phase III
+  (generative scoping).
 
 ---
 
 ## Develop
 
 ```bash
-npm test        # full vitest suite (39 tests)
+npm test        # full vitest suite
 npm run dev     # run from source via tsx (no build step)
 npm run build   # compile to dist/ (emits src only, via tsconfig.build.json)
 ```
@@ -293,20 +300,10 @@ JSON fixture — no live API calls in the test suite.
 
 ## Roadmap
 
-Slice 1 is the explicit-graph proof. Planned next:
-
-- **Inferred code-coupling graph** — map tickets → code via `branchName` and
-  commit/PR references, then code → code via a tree-sitter/SCIP static import
-  graph plus git co-change history. This is the valuable half; explicit Linear
-  relations are sparse and lossy.
-- **`critical_path`** — weighted CPM over estimates ("what sets total duration"),
-  surfaced alongside keystone ("max leverage unlock").
-- **Cold-start semantic matching** — for future tickets with no code yet, match
-  ticket text against the symbol index so the graph is useful before branches
-  land.
-- **LLM-extracted edge enrichment (GraphRAG-style)** — mine ticket
-  descriptions, comments, and PR text for dependencies Linear doesn't record
-  explicitly, shipped as *suggestions to confirm*, never auto-asserted.
+Phase I (this explicit-graph slice) is shipped. Phase II adds the inferred
+code-coupling graph + `critical_path`; Phase III adds generative scoping (break
+features into tickets, surface gaps). Full status — done vs. not — is tracked in
+[`docs/ROADMAP.md`](docs/ROADMAP.md).
 
 ---
 
