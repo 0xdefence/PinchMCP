@@ -299,15 +299,15 @@ Slice 1 is the explicit-graph proof. Planned next:
 - **LLM-extracted edge enrichment (GraphRAG-style)** — mine ticket
   descriptions, comments, and PR text for dependencies Linear doesn't record
   explicitly, shipped as *suggestions to confirm*, never auto-asserted.
-- **Linear cursor pagination** — slice 1 fetches up to 250 issues; large
-  projects need pagination + a truncation warning.
 
 ---
 
 ## Known limitations (slice 1)
 
-- Fetches up to **250 issues** per project with no pagination; larger projects
-  are silently truncated (warning is a tracked follow-up).
+- Issues are paged at 50 per request to stay under Linear's 10k query-complexity
+  cap (up to 10,000 issues across pages). A single issue's relations are capped
+  at **50** per page — issues with more than 50 blocking relations would miss the
+  overflow (implausible in practice, not yet paginated).
 - `explain_blockers` doesn't annotate cycles, though `rank_keystones` does.
 - Inferred direction from code coupling is *not* here yet — this slice uses only
   Linear's explicit, human-asserted relations.

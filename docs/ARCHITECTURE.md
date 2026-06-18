@@ -71,10 +71,13 @@ interface IssueSource {
 ```
 
 `LinearGraphQLSource` takes an API key and an injectable `fetchFn` (defaults to
-the global `fetch`, overridden in tests). It POSTs a fixed query to
+the global `fetch`, overridden in tests). It **pages** through the project's
+issues with a cursor — 50 issues per request, `relations(first: 50)` each — to
+stay under Linear's 10,000 query-complexity cap (one batched query over a large
+project is rejected outright). Each request POSTs to
 `https://api.linear.app/graphql` with the key in the `Authorization` header (no
-`Bearer` prefix — Linear personal API keys are sent raw), then hands the
-`project` payload to `normalizeProject`.
+`Bearer` prefix — Linear personal API keys are sent raw); the accumulated nodes
+from every page are handed to `normalizeProject` as one combined payload.
 
 `normalizeProject` is exported separately and is pure — it maps the raw GraphQL
 shape into `Issue[]` / `Relation[]`, which is what the tests exercise (against a
