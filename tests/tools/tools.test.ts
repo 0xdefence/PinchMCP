@@ -6,6 +6,7 @@ import { rankKeystonesTool } from "../../src/tools/rankKeystones.js";
 import { explainBlockersTool } from "../../src/tools/explainBlockers.js";
 import { criticalPathTool } from "../../src/tools/criticalPath.js";
 import { listProjectsTool } from "../../src/tools/listProjects.js";
+import { suggestLinksTool } from "../../src/tools/suggestLinks.js";
 import { IssueSource, ProjectData, ProjectSummary } from "../../src/linear/source.js";
 
 class ThrowingSource implements IssueSource {
@@ -69,5 +70,65 @@ describe("tool handlers", () => {
   it("list_projects reports an empty workspace cleanly", async () => {
     const r = await listProjectsTool(new StubSource(sampleProject, []));
     expect(r.text).toMatch(/No Linear projects found/);
+  });
+
+  it("suggest_links proposes a link for unlinked tickets that touch coupled code", async () => {
+    const { makeRepo } = await import("../code/tempRepo.js");
+    const repo = makeRepo([
+      { message: "ENG-2 add session", files: { "src/session.ts": `export const s = 1;` } },
+      {
+        message: "ENG-3 add login",
+        files: { "src/login.ts": `import { s } from "./session";` },
+      },
+      {
+        message: "ENG-2 ENG-3 tweak both",
+        files: {
+          "src/session.ts": `export const s = 2;`,
+          "src/login.ts": `import { s } from "./session";\n// touch`,
+        },
+      },
+    ]);
+    const r = await suggestLinksTool(newCache(), "p1", repo);
+    expect(r.text).toMatch(/ENG-2/);
+    expect(r.text).toMatch(/ENG-3/);
+    expect(r.text.toLowerCase()).toMatch(/import|share|co-change/);
+  });
+
+  it("suggest_links does not re-suggest an already-linked pair", async () => {
+    const { makeRepo } = await import("../code/tempRepo.js");
+    const repo = makeRepo([
+      { message: "ENG-1 add auth", files: { "src/auth.ts": `export const a = 1;` } },
+      {
+        message: "ENG-2 use auth",
+        files: { "src/login.ts": `import { a } from "./auth";` },
+      },
+    ]);
+    const r = await suggestLinksTool(newCache(), "p1", repo);
+    // ENG-1 and ENG-2 are coupled in code but already linked (a->b) — must not appear as a suggestion.
+    expect(r.text).toMatch(/No coupling suggestions found/);
+  });
+
+  it("suggest_links does not re-suggest a pair already linked as related", async () => {
+    const { makeRepo } = await import("../code/tempRepo.js");
+    const related: ProjectData = {
+      issues: [
+        { id: "x", identifier: "ENG-7", title: "X", state: "Todo", estimate: null, branchName: null },
+        { id: "y", identifier: "ENG-8", title: "Y", state: "Todo", estimate: null, branchName: null },
+      ],
+      relations: [{ type: "related", fromIssueId: "x", toIssueId: "y" }],
+    };
+    const cache = new GraphCache(new StubSource(related));
+    const repo = makeRepo([
+      { message: "ENG-7 add", files: { "src/x.ts": `export const x = 1;` } },
+      { message: "ENG-8 use", files: { "src/y.ts": `import { x } from "./x";` } },
+    ]);
+    const r = await suggestLinksTool(cache, "p1", repo);
+    expect(r.text).toMatch(/No coupling suggestions found/);
+  });
+
+  it("suggest_links errors clearly when repo_path is not a git repo", async () => {
+    const { tmpdir } = await import("node:os");
+    const r = await suggestLinksTool(newCache(), "p1", tmpdir());
+    expect(r.text).toMatch(/not a git repo/i);
   });
 });

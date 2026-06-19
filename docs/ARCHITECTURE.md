@@ -6,7 +6,7 @@ keystone algorithm itself, see [KEYSTONE-ALGORITHM.md](./KEYSTONE-ALGORITHM.md).
 ## Overview
 
 PinchMCP is a stdio [MCP](https://modelcontextprotocol.io) server. An MCP client
-(Claude Code) launches it as a subprocess and calls its five tools. The server
+(Claude Code) launches it as a subprocess and calls its six tools. The server
 fetches a Linear project's issues + blocking relations, builds an in-memory
 directed graph, and runs deterministic graph algorithms over it. There is no
 LLM, no embedding, and no persistence inside the server — it is a pure analysis
@@ -119,9 +119,14 @@ project, tens of tickets). There is no TTL or invalidation beyond an explicit
 
 `src/tools/*` are thin handlers: resolve the graph from the cache (or, for
 `list_projects`, call the source directly), call one pure function, and format an
-explainable `ToolResult`. No graph logic lives here. The five tools are
-`list_projects`, `build_feature_graph`, `rank_keystones`, `critical_path`, and
-`explain_blockers`.
+explainable `ToolResult`. No graph logic lives here. The six tools are
+`list_projects`, `build_feature_graph`, `rank_keystones`, `critical_path`,
+`explain_blockers`, and `suggest_links`.
+
+`suggest_links` delegates to `src/code/` — a read-only layer of git and
+filesystem reads whose inferred edges are **never inserted into `FeatureGraph`**.
+Coupling is surfaced as scored, evidence-carrying `LinkSuggestion` objects for
+the user to confirm; keystone and critical-path analysis are unaffected.
 
 ```ts
 interface ToolResult {
@@ -131,7 +136,7 @@ interface ToolResult {
 ```
 
 `src/index.ts` constructs the dependency chain (`config → LinearGraphQLSource →
-GraphCache`), registers the five tools on an `McpServer` with zod input schemas,
+GraphCache`), registers the six tools on an `McpServer` with zod input schemas,
 and connects a `StdioServerTransport`. `src/config.ts` reads and validates
 `LINEAR_API_KEY`, failing fast at startup if it is missing.
 
@@ -198,7 +203,7 @@ and separates flow edges from metadata:
 - **Cache / tools** — exercised through a `StubSource` test double; one test
   drives a `ThrowingSource` to lock in error propagation.
 
-Run with `npm test` (vitest). The suite is 39 tests across 8 files.
+Run with `npm test` (vitest). The suite is 85 tests across 17 files.
 
 ## Design decisions
 
