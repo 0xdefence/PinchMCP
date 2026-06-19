@@ -1,0 +1,78 @@
+import { GraphCache } from "../cache.js";
+import { ToolResult } from "./buildFeatureGraph.js";
+import { isGitRepo, gitLog } from "../code/git.js";
+import { mapTicketsToFiles, IssueRef } from "../code/ticketMap.js";
+import { buildCoChange } from "../code/coChange.js";
+import { buildImportGraph } from "../code/importGraph.js";
+import { coupleTickets } from "../code/couple.js";
+import { SuggestLinksResult } from "../code/types.js";
+
+const MAX_COMMITS = 2000;
+
+export async function suggestLinksTool(
+  cache: GraphCache,
+  projectId: string,
+  repoPath: string
+): Promise<ToolResult> {
+  if (!(await isGitRepo(repoPath))) {
+    return {
+      text: `${repoPath} is not a git repo (or git is unavailable). Pass repo_path = the local checkout of the project's repo.`,
+      structured: { error: "not_a_git_repo", repoPath },
+    };
+  }
+
+  const graph = await cache.getOrBuild(projectId);
+  const issues: IssueRef[] = [...graph.nodes.values()].map((n) => ({
+    id: n.id,
+    identifier: n.identifier,
+    branchName: n.branchName,
+  }));
+
+  const commits = await gitLog(repoPath, MAX_COMMITS);
+  const ticketFiles = mapTicketsToFiles(commits, issues);
+  const allFiles = [...new Set(ticketFiles.flatMap((t) => t.files))];
+  const imports = await buildImportGraph(repoPath, allFiles);
+  const coChange = buildCoChange(commits);
+
+  // Surface all code-coupling suggestions. Already-linked pairs are included
+  // because the code evidence can reinforce or contradict the explicit relation;
+  // callers should confirm before acting on any suggestion.
+  const suggestions = coupleTickets(ticketFiles, imports, coChange);
+
+  const unmappedTickets = ticketFiles
+    .filter((t) => t.files.length === 0)
+    .map((t) => t.identifier);
+
+  const warnings: string[] = [];
+  if (commits.length === MAX_COMMITS) {
+    warnings.push(
+      `History scan capped at ${MAX_COMMITS} commits; older coupling may be missed.`
+    );
+  }
+
+  const result: SuggestLinksResult = { suggestions, unmappedTickets, warnings };
+  return { text: render(result), structured: result };
+}
+
+function render(r: SuggestLinksResult): string {
+  const arrow = (d: string) =>
+    d === "a_depends_on_b" ? "→" : d === "b_depends_on_a" ? "←" : "↔";
+  let text: string;
+  if (!r.suggestions.length) {
+    text = "No coupling suggestions found from the code.";
+  } else {
+    const lines = r.suggestions
+      .slice(0, 15)
+      .map(
+        (s) =>
+          `- ${s.a} ${arrow(s.direction)} ${s.b} (score ${s.score}) — ${s.evidence.join("; ")}. Consider linking in Linear.`
+      );
+    text =
+      `Inferred coupling suggestions (confirm before acting — these are not asserted):\n${lines.join("\n")}`;
+  }
+  if (r.unmappedTickets.length) {
+    text += `\n\nNo code found for: ${r.unmappedTickets.join(", ")} (no branch/commit references).`;
+  }
+  if (r.warnings.length) text += `\n\nWarnings:\n- ${r.warnings.join("\n- ")}`;
+  return text;
+}

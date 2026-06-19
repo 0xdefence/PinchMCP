@@ -10,6 +10,7 @@ import { rankKeystonesTool } from "./tools/rankKeystones.js";
 import { explainBlockersTool } from "./tools/explainBlockers.js";
 import { criticalPathTool } from "./tools/criticalPath.js";
 import { listProjectsTool } from "./tools/listProjects.js";
+import { suggestLinksTool } from "./tools/suggestLinks.js";
 
 function textResult(r: ToolResult) {
   return { content: [{ type: "text" as const, text: r.text }] };
@@ -90,6 +91,23 @@ async function main() {
     async ({ project_id, ticket_id }) => {
       const id = await resolveProjectId(source, project_id);
       return textResult(await explainBlockersTool(cache, id, ticket_id));
+    }
+  );
+
+  server.registerTool(
+    "suggest_links",
+    {
+      title: "Suggest missing ticket links from code",
+      description:
+        "Infer coupling between tickets from the code they touch (shared files, intra-repo imports, git co-change) and suggest links Linear doesn't record. Suggestions only — never asserted; never folded into keystone/critical_path. project_id accepts a name, slug, or UUID; repo_path is the absolute path to the project's local git checkout.",
+      inputSchema: {
+        project_id: projectId,
+        repo_path: z.string().describe("Absolute path to the project's local git checkout"),
+      },
+    },
+    async ({ project_id, repo_path }) => {
+      const id = await resolveProjectId(source, project_id);
+      return textResult(await suggestLinksTool(cache, id, repo_path));
     }
   );
 

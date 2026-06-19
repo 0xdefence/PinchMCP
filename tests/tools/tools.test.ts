@@ -6,6 +6,7 @@ import { rankKeystonesTool } from "../../src/tools/rankKeystones.js";
 import { explainBlockersTool } from "../../src/tools/explainBlockers.js";
 import { criticalPathTool } from "../../src/tools/criticalPath.js";
 import { listProjectsTool } from "../../src/tools/listProjects.js";
+import { suggestLinksTool } from "../../src/tools/suggestLinks.js";
 import { IssueSource, ProjectData, ProjectSummary } from "../../src/linear/source.js";
 
 class ThrowingSource implements IssueSource {
@@ -69,5 +70,33 @@ describe("tool handlers", () => {
   it("list_projects reports an empty workspace cleanly", async () => {
     const r = await listProjectsTool(new StubSource(sampleProject, []));
     expect(r.text).toMatch(/No Linear projects found/);
+  });
+
+  it("suggest_links proposes a link for tickets that touch coupled code", async () => {
+    const { makeRepo } = await import("../code/tempRepo.js");
+    const repo = makeRepo([
+      { message: "ENG-1 add auth", files: { "src/auth.ts": `export const a = 1;` } },
+      {
+        message: "ENG-2 use auth",
+        files: { "src/login.ts": `import { a } from "./auth";` },
+      },
+      {
+        message: "ENG-1 ENG-2 tweak both",
+        files: {
+          "src/auth.ts": `export const a = 2;`,
+          "src/login.ts": `import { a } from "./auth";\n// use ${"a"}`,
+        },
+      },
+    ]);
+    const r = await suggestLinksTool(newCache(), "p1", repo);
+    expect(r.text).toMatch(/ENG-1/);
+    expect(r.text).toMatch(/ENG-2/);
+    expect(r.text.toLowerCase()).toMatch(/import|share|co-change/);
+  });
+
+  it("suggest_links errors clearly when repo_path is not a git repo", async () => {
+    const { tmpdir } = await import("node:os");
+    const r = await suggestLinksTool(newCache(), "p1", tmpdir());
+    expect(r.text).toMatch(/not a git repo/i);
   });
 });

@@ -35,7 +35,7 @@ relations.
 - ✅ Cursor pagination of the Linear fetch (stays under the 10k complexity cap)
 - ✅ Hardening — dependency/security updates, Node 22+, `noEmitOnError`, docs
 
-## Phase II — Code grounding 🟡 (the valuable half)
+## Phase II — Code grounding ✅ (the valuable half)
 
 Move beyond human-asserted Linear links to *inferred* coupling, and add the
 duration view. Direction inference is the weak link, so inferred edges ship as
@@ -52,10 +52,10 @@ co-change (SCIP/tree-sitter deferred); inferred edges surface through a separate
 `suggest_links` tool, scored and evidence-carrying, undirected unless
 import-derived, **never folded into keystone/CPM**.
 
-- ⬜ Ticket → code mapping — via `branchName` + commit/PR references to issue ids
-- ⬜ Code → code dependency — resolved file-level import graph (TS/JS first)
-- ⬜ Git **co-change** matrix — hidden coupling from files that change together
-- ⬜ `suggest_links` tool — scored candidate ticket↔ticket edges with evidence
+- ✅ Ticket → code mapping — via `branchName` + commit/PR references to issue ids
+- ✅ Code → code dependency — resolved intra-repo relative-import graph (TS/JS)
+- ✅ Git **co-change** matrix — hidden coupling from files that change together
+- ✅ `suggest_links` tool — scored candidate ticket↔ticket edges with evidence
 - ⬜ Cold-start semantic matching — match ticket text against the symbol index so
   future tickets with no code yet still place in the graph
 - ⬜ GraphRAG-style edge enrichment — LLM-extract implicit dependencies from
@@ -87,5 +87,4 @@ structured output.
 
 ---
 
-_Phase I is complete. Phase II has started with `critical_path` (II-a); the
-code-grounding subsystem (II-b) and Phase III are not started._
+_Phase I and Phase II are complete. Phase III (generative scoping) is not started._
