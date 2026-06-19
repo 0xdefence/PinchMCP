@@ -108,6 +108,24 @@ describe("tool handlers", () => {
     expect(r.text).toMatch(/No coupling suggestions found/);
   });
 
+  it("suggest_links does not re-suggest a pair already linked as related", async () => {
+    const { makeRepo } = await import("../code/tempRepo.js");
+    const related: ProjectData = {
+      issues: [
+        { id: "x", identifier: "ENG-7", title: "X", state: "Todo", estimate: null, branchName: null },
+        { id: "y", identifier: "ENG-8", title: "Y", state: "Todo", estimate: null, branchName: null },
+      ],
+      relations: [{ type: "related", fromIssueId: "x", toIssueId: "y" }],
+    };
+    const cache = new GraphCache(new StubSource(related));
+    const repo = makeRepo([
+      { message: "ENG-7 add", files: { "src/x.ts": `export const x = 1;` } },
+      { message: "ENG-8 use", files: { "src/y.ts": `import { x } from "./x";` } },
+    ]);
+    const r = await suggestLinksTool(cache, "p1", repo);
+    expect(r.text).toMatch(/No coupling suggestions found/);
+  });
+
   it("suggest_links errors clearly when repo_path is not a git repo", async () => {
     const { tmpdir } = await import("node:os");
     const r = await suggestLinksTool(newCache(), "p1", tmpdir());

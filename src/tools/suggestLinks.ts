@@ -28,7 +28,9 @@ export async function suggestLinksTool(
     branchName: n.branchName,
   }));
 
-  const commits = await gitLog(repoPath, MAX_COMMITS);
+  const raw = await gitLog(repoPath, MAX_COMMITS + 1);
+  const truncated = raw.length > MAX_COMMITS;
+  const commits = raw.slice(0, MAX_COMMITS);
   const ticketFiles = mapTicketsToFiles(commits, issues);
   const allFiles = [...new Set(ticketFiles.flatMap((t) => t.files))];
   const imports = await buildImportGraph(repoPath, allFiles);
@@ -44,7 +46,9 @@ export async function suggestLinksTool(
     if (!a || !b) return false;
     return (
       (graph.successors.get(a)?.has(b) ?? false) ||
-      (graph.successors.get(b)?.has(a) ?? false)
+      (graph.successors.get(b)?.has(a) ?? false) ||
+      (graph.relatedMeta.get(a)?.has(b) ?? false) ||
+      (graph.relatedMeta.get(b)?.has(a) ?? false)
     );
   };
 
@@ -57,7 +61,7 @@ export async function suggestLinksTool(
     .map((t) => t.identifier);
 
   const warnings: string[] = [];
-  if (commits.length === MAX_COMMITS) {
+  if (truncated) {
     warnings.push(
       `History scan capped at ${MAX_COMMITS} commits; older coupling may be missed.`
     );
