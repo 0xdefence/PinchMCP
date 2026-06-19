@@ -34,10 +34,23 @@ export async function suggestLinksTool(
   const imports = await buildImportGraph(repoPath, allFiles);
   const coChange = buildCoChange(commits);
 
-  // Surface all code-coupling suggestions. Already-linked pairs are included
-  // because the code evidence can reinforce or contradict the explicit relation;
-  // callers should confirm before acting on any suggestion.
-  const suggestions = coupleTickets(ticketFiles, imports, coChange);
+  // Already-explicit links (in either direction) shouldn't be re-suggested.
+  const idByIdentifier = new Map(
+    [...graph.nodes.values()].map((n) => [n.identifier, n.id])
+  );
+  const linked = (aIdent: string, bIdent: string): boolean => {
+    const a = idByIdentifier.get(aIdent);
+    const b = idByIdentifier.get(bIdent);
+    if (!a || !b) return false;
+    return (
+      (graph.successors.get(a)?.has(b) ?? false) ||
+      (graph.successors.get(b)?.has(a) ?? false)
+    );
+  };
+
+  const suggestions = coupleTickets(ticketFiles, imports, coChange).filter(
+    (s) => !linked(s.a, s.b)
+  );
 
   const unmappedTickets = ticketFiles
     .filter((t) => t.files.length === 0)

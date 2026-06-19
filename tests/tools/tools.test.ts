@@ -72,7 +72,29 @@ describe("tool handlers", () => {
     expect(r.text).toMatch(/No Linear projects found/);
   });
 
-  it("suggest_links proposes a link for tickets that touch coupled code", async () => {
+  it("suggest_links proposes a link for unlinked tickets that touch coupled code", async () => {
+    const { makeRepo } = await import("../code/tempRepo.js");
+    const repo = makeRepo([
+      { message: "ENG-2 add session", files: { "src/session.ts": `export const s = 1;` } },
+      {
+        message: "ENG-3 add login",
+        files: { "src/login.ts": `import { s } from "./session";` },
+      },
+      {
+        message: "ENG-2 ENG-3 tweak both",
+        files: {
+          "src/session.ts": `export const s = 2;`,
+          "src/login.ts": `import { s } from "./session";\n// touch`,
+        },
+      },
+    ]);
+    const r = await suggestLinksTool(newCache(), "p1", repo);
+    expect(r.text).toMatch(/ENG-2/);
+    expect(r.text).toMatch(/ENG-3/);
+    expect(r.text.toLowerCase()).toMatch(/import|share|co-change/);
+  });
+
+  it("suggest_links does not re-suggest an already-linked pair", async () => {
     const { makeRepo } = await import("../code/tempRepo.js");
     const repo = makeRepo([
       { message: "ENG-1 add auth", files: { "src/auth.ts": `export const a = 1;` } },
@@ -80,18 +102,10 @@ describe("tool handlers", () => {
         message: "ENG-2 use auth",
         files: { "src/login.ts": `import { a } from "./auth";` },
       },
-      {
-        message: "ENG-1 ENG-2 tweak both",
-        files: {
-          "src/auth.ts": `export const a = 2;`,
-          "src/login.ts": `import { a } from "./auth";\n// use ${"a"}`,
-        },
-      },
     ]);
     const r = await suggestLinksTool(newCache(), "p1", repo);
-    expect(r.text).toMatch(/ENG-1/);
-    expect(r.text).toMatch(/ENG-2/);
-    expect(r.text.toLowerCase()).toMatch(/import|share|co-change/);
+    // ENG-1 and ENG-2 are coupled in code but already linked (a->b) — must not appear as a suggestion.
+    expect(r.text).toMatch(/No coupling suggestions found/);
   });
 
   it("suggest_links errors clearly when repo_path is not a git repo", async () => {

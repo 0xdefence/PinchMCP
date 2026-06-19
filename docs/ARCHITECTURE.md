@@ -136,7 +136,7 @@ interface ToolResult {
 ```
 
 `src/index.ts` constructs the dependency chain (`config → LinearGraphQLSource →
-GraphCache`), registers the five tools on an `McpServer` with zod input schemas,
+GraphCache`), registers the six tools on an `McpServer` with zod input schemas,
 and connects a `StdioServerTransport`. `src/config.ts` reads and validates
 `LINEAR_API_KEY`, failing fast at startup if it is missing.
 
