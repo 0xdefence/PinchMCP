@@ -24,6 +24,7 @@ const QUERY = `query($id: String!, $after: String) {
         branchName
         state { name }
         relations(first: ${RELATION_LIMIT}) { nodes { type relatedIssue { id } } }
+        attachments(first: 25) { nodes { url } }
       }
     }
   }
@@ -133,6 +134,7 @@ export function normalizeProject(project: any): ProjectData {
     state: n.state?.name ?? "unknown",
     estimate: n.estimate ?? null,
     branchName: n.branchName ?? null,
+    prNumbers: extractPrNumbers(n.attachments?.nodes ?? []),
   }));
 
   const relations: Relation[] = [];
@@ -151,6 +153,17 @@ export function normalizeProject(project: any): ProjectData {
   }
 
   return { issues, relations };
+}
+
+function extractPrNumbers(nodes: any[]): number[] {
+  const nums = new Set<number>();
+  for (const a of nodes) {
+    const m = String(a?.url ?? "").match(
+      /github\.com\/[^/]+\/[^/]+\/pull\/(\d+)/i
+    );
+    if (m) nums.add(Number(m[1]));
+  }
+  return [...nums];
 }
 
 function mapRelationType(t: string): RelationType | null {

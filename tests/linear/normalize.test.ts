@@ -113,4 +113,40 @@ describe("normalizeProject", () => {
     });
     expect(data.relations).toHaveLength(1);
   });
+
+  it("extracts GitHub PR numbers from issue attachments", () => {
+    const data = normalizeProject({
+      issues: {
+        nodes: [
+          {
+            id: "x1", identifier: "ENG-9", title: "T", estimate: null,
+            branchName: null, state: { name: "Todo" },
+            relations: { nodes: [] },
+            attachments: {
+              nodes: [
+                { url: "https://github.com/0xdefence/0xDefend/pull/44" },
+                { url: "https://github.com/0xdefence/0xDefend/pull/44" },
+                { url: "https://linear.app/whatever" },
+              ],
+            },
+          },
+        ],
+      },
+    });
+    expect(data.issues[0].prNumbers).toEqual([44]);
+  });
+
+  it("defaults prNumbers to [] when there are no attachments", () => {
+    const data = normalizeProject({
+      issues: {
+        nodes: [
+          {
+            id: "x1", identifier: "ENG-9", title: "T", estimate: null,
+            branchName: null, state: { name: "Todo" }, relations: { nodes: [] },
+          },
+        ],
+      },
+    });
+    expect(data.issues[0].prNumbers).toEqual([]);
+  });
 });
