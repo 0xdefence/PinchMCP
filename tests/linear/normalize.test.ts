@@ -162,4 +162,17 @@ describe("normalizeProject", () => {
     expect(data.issues[0].description).toBe("build the econ simulator agent");
     expect(data.issues[1].description).toBe("");
   });
+
+  it("carries the assignee name (null when unassigned)", () => {
+    const data = normalizeProject({
+      issues: { nodes: [
+        { id: "x1", identifier: "ENG-9", title: "T", estimate: null, branchName: null,
+          state: { name: "Todo" }, relations: { nodes: [] }, assignee: { name: "Ada" } },
+        { id: "x2", identifier: "ENG-10", title: "U", estimate: null, branchName: null,
+          state: { name: "Todo" }, relations: { nodes: [] } },
+      ] },
+    });
+    expect(data.issues[0].assignee).toBe("Ada");
+    expect(data.issues[1].assignee).toBeNull();
+  });
 });

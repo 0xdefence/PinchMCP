@@ -116,4 +116,12 @@ describe("buildFeatureGraph", () => {
     );
     expect(g.nodes.get("a")!.description).toBe("hello world");
   });
+
+  it("threads assignee onto the graph node", () => {
+    const g = buildFeatureGraph(
+      [{ id: "a", identifier: "ENG-1", title: "t", state: "Todo", estimate: null, branchName: null, assignee: "Ada" }],
+      []
+    );
+    expect(g.nodes.get("a")!.assignee).toBe("Ada");
+  });
 });

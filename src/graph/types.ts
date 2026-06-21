@@ -5,6 +5,7 @@ export interface GraphNode {
   state: string;
   estimate: number | null;
   branchName: string | null;
+  assignee?: string | null;
   description?: string;
   prNumbers?: number[];
 }
