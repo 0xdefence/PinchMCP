@@ -4,6 +4,7 @@ export interface IssueRef {
   id: string;
   identifier: string;
   branchName: string | null;
+  prNumbers?: number[];
 }
 
 function escapeRegExp(s: string): string {
@@ -21,6 +22,9 @@ export function mapTicketsToFiles(
     ];
     if (iss.branchName) {
       patterns.push(new RegExp(escapeRegExp(iss.branchName), "i"));
+    }
+    for (const pr of iss.prNumbers ?? []) {
+      patterns.push(new RegExp(`\\(#${pr}\\)`));
     }
     const files = new Set<string>();
     for (const c of commits) {

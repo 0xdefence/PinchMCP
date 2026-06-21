@@ -95,4 +95,17 @@ describe("buildFeatureGraph", () => {
     expect([...g.relatedMeta.get("a")!]).toEqual(["b"]);
     expect([...g.relatedMeta.get("b")!]).toEqual(["a"]);
   });
+
+  it("threads prNumbers onto the graph node", () => {
+    const g = buildFeatureGraph(
+      [{ id: "a", identifier: "ENG-1", title: "t", state: "Todo", estimate: null, branchName: null, prNumbers: [44] }],
+      []
+    );
+    expect(g.nodes.get("a")!.prNumbers).toEqual([44]);
+  });
+
+  it("defaults node prNumbers to [] when the issue has none", () => {
+    const g = buildFeatureGraph([issue("a", "ENG-1")], []);
+    expect(g.nodes.get("a")!.prNumbers).toEqual([]);
+  });
 });

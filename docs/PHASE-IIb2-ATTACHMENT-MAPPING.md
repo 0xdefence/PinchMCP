@@ -1,6 +1,6 @@
 # Phase II-b.2 — Attachment-based ticket→code mapping (Design Spec)
 
-Status: **decisions locked from the live finding, pre-implementation.**
+Status: **implemented.**
 
 ## Why
 

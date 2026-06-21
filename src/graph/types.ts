@@ -5,6 +5,7 @@ export interface GraphNode {
   state: string;
   estimate: number | null;
   branchName: string | null;
+  prNumbers?: number[];
 }
 
 export interface Edge {

@@ -52,7 +52,7 @@ co-change (SCIP/tree-sitter deferred); inferred edges surface through a separate
 `suggest_links` tool, scored and evidence-carrying, undirected unless
 import-derived, **never folded into keystone/CPM**.
 
-- ✅ Ticket → code mapping — via `branchName` + commit/PR references to issue ids
+- ✅ Ticket → code mapping — identifier/branch commit refs **plus Linear attachment PR numbers** (`(#N)` squash-merge match)
 - ✅ Code → code dependency — resolved intra-repo relative-import graph (TS/JS)
 - ✅ Git **co-change** matrix — hidden coupling from files that change together
 - ✅ `suggest_links` tool — scored candidate ticket↔ticket edges with evidence
