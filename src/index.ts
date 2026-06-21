@@ -12,6 +12,7 @@ import { criticalPathTool } from "./tools/criticalPath.js";
 import { listProjectsTool } from "./tools/listProjects.js";
 import { suggestLinksTool } from "./tools/suggestLinks.js";
 import { suggestScopeTool } from "./tools/suggestScope.js";
+import { surfaceGapsTool } from "./tools/surfaceGaps.js";
 
 function textResult(r: ToolResult) {
   return { content: [{ type: "text" as const, text: r.text }] };
@@ -126,6 +127,20 @@ async function main() {
     async ({ project_id, repo_path }) => {
       const id = await resolveProjectId(source, project_id);
       return textResult(await suggestScopeTool(cache, id, repo_path));
+    }
+  );
+
+  server.registerTool(
+    "surface_gaps",
+    {
+      title: "Surface graph hygiene gaps",
+      description:
+        "Report deterministic planning gaps in a project's dependency graph: cycles, isolated tickets, and high-leverage (keystone) tickets missing an estimate or owner. Analysis only — asserts nothing, writes nothing. project_id accepts a name, slug, or UUID.",
+      inputSchema: { project_id: projectId },
+    },
+    async ({ project_id }) => {
+      const id = await resolveProjectId(source, project_id);
+      return textResult(await surfaceGapsTool(cache, id));
     }
   );
 

@@ -74,9 +74,9 @@ structured output.
 - ⬜ Feature → ticket decomposition — break a feature description into candidate
   tickets *with* suggested blocking relations, so the graph exists before
   anyone hand-links it
-- ⬜ Improvement / gap surfacing — mine the graph for problems: orphan tickets,
-  suspected-but-unlinked blockers, cycles to resolve, keystones missing
-  owner/estimate
+- ✅ Improvement / gap surfacing — `surface_gaps` tool: mine the graph for
+  problems: orphan tickets, cycles to resolve, keystones missing owner/estimate.
+  Deterministic; asserts/writes nothing.
 - ⬜ Grounded suggestions — "these three tickets all touch the auth module but
   aren't linked — should they be?" (needs the Phase II code-coupling graph)
 
@@ -88,4 +88,4 @@ structured output.
 
 ---
 
-_Phase I and Phase II are complete. Phase III (generative scoping) is not started._
+_Phase I and Phase II are complete. Phase III has started: `surface_gaps` (gap surfacing) is shipped; feature decomposition and grounded suggestions remain._

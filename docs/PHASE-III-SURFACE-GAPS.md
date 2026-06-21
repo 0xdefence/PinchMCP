@@ -1,6 +1,6 @@
 # Phase III (start) — surface_gaps (Design Spec)
 
-Status: **decisions locked, pre-implementation.**
+Status: **implemented.**
 
 ## Boundary (the load-bearing principle)
 

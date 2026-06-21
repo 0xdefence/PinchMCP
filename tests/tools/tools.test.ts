@@ -8,6 +8,7 @@ import { criticalPathTool } from "../../src/tools/criticalPath.js";
 import { listProjectsTool } from "../../src/tools/listProjects.js";
 import { suggestLinksTool } from "../../src/tools/suggestLinks.js";
 import { suggestScopeTool } from "../../src/tools/suggestScope.js";
+import { surfaceGapsTool } from "../../src/tools/surfaceGaps.js";
 import { IssueSource, ProjectData, ProjectSummary } from "../../src/linear/source.js";
 
 class ThrowingSource implements IssueSource {
@@ -148,5 +149,12 @@ describe("tool handlers", () => {
     const { tmpdir } = await import("node:os");
     const r = await suggestScopeTool(newCache(), "p1", tmpdir());
     expect(r.text).toMatch(/not a git repo/i);
+  });
+
+  it("surface_gaps flags an unestimated, unowned keystone", async () => {
+    const r = await surfaceGapsTool(newCache(), "p1");
+    expect(r.text).toMatch(/ENG-1/);
+    expect(r.text.toLowerCase()).toMatch(/unestimated/);
+    expect(r.text.toLowerCase()).toMatch(/unowned/);
   });
 });
