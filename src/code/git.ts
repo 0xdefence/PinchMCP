@@ -41,6 +41,19 @@ export async function gitLog(
   return parseLog(stdout);
 }
 
+const SOURCE_EXT = /\.(ts|tsx|js|jsx|mjs|cjs)$/;
+const TEST_PATH = /(^|\/)(tests?|__tests__)\/|\.(test|spec)\.[tj]sx?$/;
+
+export async function listSourceFiles(repoPath: string): Promise<string[]> {
+  const { stdout } = await exec("git", ["-C", repoPath, "ls-files"], {
+    maxBuffer: 64 * 1024 * 1024,
+  });
+  return stdout
+    .split("\n")
+    .map((s) => s.trim())
+    .filter((f) => f.length > 0 && SOURCE_EXT.test(f) && !TEST_PATH.test(f));
+}
+
 export function parseLog(stdout: string): Commit[] {
   return stdout
     .split("\x1e")
