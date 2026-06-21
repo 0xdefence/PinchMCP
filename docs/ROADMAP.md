@@ -56,8 +56,9 @@ import-derived, **never folded into keystone/CPM**.
 - ✅ Code → code dependency — resolved intra-repo relative-import graph (TS/JS)
 - ✅ Git **co-change** matrix — hidden coupling from files that change together
 - ✅ `suggest_links` tool — scored candidate ticket↔ticket edges with evidence
-- ⬜ Cold-start semantic matching — match ticket text against the symbol index so
-  future tickets with no code yet still place in the graph
+- ✅ Cold-start semantic matching — keyword/TF-IDF index of repo source files;
+  `suggest_scope` tool predicts code areas per ticket and surfaces likely
+  cross-ticket couplings, for backlog tickets with no code yet
 - ⬜ GraphRAG-style edge enrichment — LLM-extract implicit dependencies from
   ticket descriptions / comments / PR text (suggestions only)
 - ⬜ MCP-to-MCP passthrough — implement `IssueSource` against the official Linear

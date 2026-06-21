@@ -6,7 +6,7 @@ keystone algorithm itself, see [KEYSTONE-ALGORITHM.md](./KEYSTONE-ALGORITHM.md).
 ## Overview
 
 PinchMCP is a stdio [MCP](https://modelcontextprotocol.io) server. An MCP client
-(Claude Code) launches it as a subprocess and calls its six tools. The server
+(Claude Code) launches it as a subprocess and calls its seven tools. The server
 fetches a Linear project's issues + blocking relations, builds an in-memory
 directed graph, and runs deterministic graph algorithms over it. There is no
 LLM, no embedding, and no persistence inside the server — it is a pure analysis
@@ -119,14 +119,20 @@ project, tens of tickets). There is no TTL or invalidation beyond an explicit
 
 `src/tools/*` are thin handlers: resolve the graph from the cache (or, for
 `list_projects`, call the source directly), call one pure function, and format an
-explainable `ToolResult`. No graph logic lives here. The six tools are
+explainable `ToolResult`. No graph logic lives here. The seven tools are
 `list_projects`, `build_feature_graph`, `rank_keystones`, `critical_path`,
-`explain_blockers`, and `suggest_links`.
+`explain_blockers`, `suggest_links`, and `suggest_scope`.
 
 `suggest_links` delegates to `src/code/` — a read-only layer of git and
 filesystem reads whose inferred edges are **never inserted into `FeatureGraph`**.
 Coupling is surfaced as scored, evidence-carrying `LinkSuggestion` objects for
 the user to confirm; keystone and critical-path analysis are unaffected.
+
+`suggest_scope` delegates to `src/scope/` — a read-only keyword-matching layer
+(no embeddings, deterministic) that indexes repo source files (path tokens +
+identifiers + comment words) and scores ticket text against them via TF-IDF.
+Predicted scope and cross-ticket couplings are planning aids only; they **never
+enter `FeatureGraph`** and are never used in keystone or critical-path analysis.
 
 ```ts
 interface ToolResult {
@@ -136,7 +142,7 @@ interface ToolResult {
 ```
 
 `src/index.ts` constructs the dependency chain (`config → LinearGraphQLSource →
-GraphCache`), registers the six tools on an `McpServer` with zod input schemas,
+GraphCache`), registers the seven tools on an `McpServer` with zod input schemas,
 and connects a `StdioServerTransport`. `src/config.ts` reads and validates
 `LINEAR_API_KEY`, failing fast at startup if it is missing.
 

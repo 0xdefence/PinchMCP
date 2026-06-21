@@ -1,6 +1,6 @@
 # Phase II-c — Cold-start semantic matching (Design Spec)
 
-Status: **decisions locked, pre-implementation.**
+Status: **implemented.**
 
 ## Why
 
