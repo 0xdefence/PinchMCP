@@ -108,4 +108,12 @@ describe("buildFeatureGraph", () => {
     const g = buildFeatureGraph([issue("a", "ENG-1")], []);
     expect(g.nodes.get("a")!.prNumbers).toEqual([]);
   });
+
+  it("threads description onto the graph node", () => {
+    const g = buildFeatureGraph(
+      [{ id: "a", identifier: "ENG-1", title: "t", state: "Todo", estimate: null, branchName: null, description: "hello world" }],
+      []
+    );
+    expect(g.nodes.get("a")!.description).toBe("hello world");
+  });
 });

@@ -149,4 +149,17 @@ describe("normalizeProject", () => {
     });
     expect(data.issues[0].prNumbers).toEqual([]);
   });
+
+  it("carries the issue description (empty string when absent)", () => {
+    const data = normalizeProject({
+      issues: { nodes: [
+        { id: "x1", identifier: "ENG-9", title: "T", description: "build the econ simulator agent",
+          estimate: null, branchName: null, state: { name: "Todo" }, relations: { nodes: [] } },
+        { id: "x2", identifier: "ENG-10", title: "U",
+          estimate: null, branchName: null, state: { name: "Todo" }, relations: { nodes: [] } },
+      ] },
+    });
+    expect(data.issues[0].description).toBe("build the econ simulator agent");
+    expect(data.issues[1].description).toBe("");
+  });
 });

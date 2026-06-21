@@ -20,6 +20,7 @@ const QUERY = `query($id: String!, $after: String) {
         id
         identifier
         title
+        description
         estimate
         branchName
         state { name }
@@ -134,6 +135,7 @@ export function normalizeProject(project: any): ProjectData {
     state: n.state?.name ?? "unknown",
     estimate: n.estimate ?? null,
     branchName: n.branchName ?? null,
+    description: n.description ?? "",
     prNumbers: extractPrNumbers(n.attachments?.nodes ?? []),
   }));
 
