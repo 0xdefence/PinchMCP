@@ -31,4 +31,15 @@ describe("KeywordMatcher", () => {
     const m = new KeywordMatcher(1).score(["agents"], index);
     expect(m.length).toBeLessThanOrEqual(1);
   });
+
+  it("still matches in a single-file repo (guard would otherwise reject all)", () => {
+    const single = {
+      docs: new Map([["only.ts", ["foo", "bar"]]]),
+      df: new Map([["foo", 1], ["bar", 1]]),
+      fileCount: 1,
+    };
+    const m = new KeywordMatcher().score(["foo"], single);
+    expect(m).toHaveLength(1);
+    expect(m[0].file).toBe("only.ts");
+  });
 });

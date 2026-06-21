@@ -18,7 +18,9 @@ export class KeywordMatcher implements Matcher {
       let s = 0;
       for (const term of ticketSet) {
         const dft = index.df.get(term) ?? 0;
-        if (fileSet.has(term) && dft < index.fileCount) {
+        // Drop terms present in *every* file (no signal) — except a single-file
+        // repo, where df always equals fileCount and the guard would reject all.
+        if (fileSet.has(term) && (index.fileCount === 1 || dft < index.fileCount)) {
           const w = idf(term);
           s += w;
           matched.push({ term, w });
