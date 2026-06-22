@@ -6,10 +6,11 @@ of the dependency graph. It sits between Claude Code and Linear: it reads a
 project's issues and their blocking relations, fuses them into an in-memory
 graph, and tells you where the leverage is.
 
-> **Status — slice 1 (explicit-graph path).** This release proves the idea
-> end-to-end using Linear's *explicit* `blocked`/`blocking` relations only.
-> The inferred code-coupling layer (static import graph + git co-change) is on
-> the roadmap, not in this build. See [Roadmap](#roadmap).
+> **Status.** Phase I (explicit dependency graph) and Phase II (code grounding)
+> are shipped; Phase III (generative scoping) has started. Eight tools across the
+> explicit graph, inferred code coupling, cold-start prediction, and graph
+> hygiene — all deterministic, no LLM in the server. See
+> [`docs/ROADMAP.md`](docs/ROADMAP.md) for what's done vs. planned.
 
 ---
 

@@ -65,7 +65,7 @@ import-derived, **never folded into keystone/CPM**.
   MCP and swap it in (seam already in place)
 - ⬜ Whole-org scope — beyond one project (10–40 tickets) to cross-project/org
 
-## Phase III — Generative (scope out work) ⬜
+## Phase III — Generative (scope out work) 🟡
 
 New capability class: produce work items, not just analyze them. Grounded on
 Phase II's coupling graph; generation done by the client using the server's
