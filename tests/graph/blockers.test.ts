@@ -47,4 +47,16 @@ describe("explainBlockers", () => {
     expect(e.found).toBe(false);
     expect(e.summary).toMatch(/not found/i);
   });
+
+  it("annotates when the ticket participates in a cycle", () => {
+    const g = buildFeatureGraph(["a", "b"].map(issue), [blocks("a", "b"), blocks("b", "a")]);
+    const e = explainBlockers(g, "a");
+    expect(e.inCycle).toBe(true);
+    expect(e.summary.toLowerCase()).toMatch(/cycle/);
+  });
+
+  it("inCycle is false for an acyclic ticket", () => {
+    const g = buildFeatureGraph(["a", "b"].map(issue), [blocks("a", "b")]);
+    expect(explainBlockers(g, "a").inCycle).toBe(false);
+  });
 });
