@@ -246,7 +246,7 @@ and separates flow edges from metadata:
 - **Cache / tools** — exercised through a `StubSource` test double; one test
   drives a `ThrowingSource` to lock in error propagation.
 
-Run with `npm test` (vitest). The suite is 117 tests across 22 files.
+Run with `npm test` (vitest). The suite is 129 tests across 23 files.
 
 ## Design decisions
 

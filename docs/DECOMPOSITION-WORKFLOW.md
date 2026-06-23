@@ -9,7 +9,7 @@ tickets using pinch, Claude Code, and the Linear MCP together.
 
 | Party | Role |
 |-------|------|
-| **pinch** (`decompose_grounding`) | Grounds the feature: predicts which code areas it will touch and surfaces existing tickets that are likely related. Deterministic; reads only; never writes to Linear. |
+| **pinch** (`decompose_grounding`) | Grounds the feature: predicts which code areas it will touch and surfaces existing tickets that are likely related (matched at the **module** level — same area, not necessarily the same exact file). Deterministic; reads only; never writes to Linear. |
 | **Claude Code** | Reads pinch's structured output and drafts the proposed tickets — titles, descriptions, suggested blocking relations, and checks against existing tickets to avoid duplication. The NL generation lives here, not inside the server. |
 | **Linear MCP** | Creates the tickets you confirm. Pinch never calls the Linear write API. |
 
