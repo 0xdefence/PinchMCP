@@ -27,4 +27,27 @@ describe("groundFeature", () => {
     const g = groundFeature("unrelated helper utility", index, scopes, new KeywordMatcher());
     expect(g.relatedTickets).toEqual([]);
   });
+
+  it("relates a ticket sharing a module, even on a different exact file", () => {
+    // The feature matches simulation.ts; the ticket matches governance.ts —
+    // different files, same module src/agents. Module overlap should relate them.
+    const idx: CodeIndex = {
+      docs: new Map([
+        ["src/agents/governance.ts", ["agents", "governance", "attacker"]],
+        ["src/agents/simulation.ts", ["agents", "simulation", "engine"]],
+      ]),
+      df: new Map([
+        ["agents", 2], ["governance", 1], ["attacker", 1],
+        ["simulation", 1], ["engine", 1],
+      ]),
+      fileCount: 2,
+    };
+    const ticketScopes: TicketScope[] = [
+      { identifier: "ELI-29", title: "governance attacker agent", modules: ["src/agents"],
+        matches: [{ file: "src/agents/governance.ts", score: 1, matchedTerms: ["governance"] }] },
+    ];
+    const g = groundFeature("agents simulation engine", idx, ticketScopes, new KeywordMatcher());
+    expect(g.relatedTickets.map((t) => t.identifier)).toContain("ELI-29");
+    expect(g.relatedTickets[0].sharedModules).toContain("src/agents");
+  });
 });
