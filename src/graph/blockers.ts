@@ -1,4 +1,5 @@
 import { FeatureGraph, GraphNode } from "./types.js";
+import { detectCycle } from "./keystone.js";
 
 export interface BlockerExplanation {
   ticket: string; // identifier
@@ -7,6 +8,7 @@ export interface BlockerExplanation {
   downstream: string[]; // identifiers it transitively unblocks
   summary: string;
   found: boolean;
+  inCycle: boolean;
 }
 
 export function explainBlockers(
@@ -22,6 +24,7 @@ export function explainBlockers(
       downstream: [],
       summary: `Ticket ${ticketKey} not found in graph.`,
       found: false,
+      inCycle: false,
     };
   }
 
@@ -30,13 +33,21 @@ export function explainBlockers(
   const upstream = toIdents(walk(graph, node.id, graph.predecessors));
   const downstream = toIdents(walk(graph, node.id, graph.successors));
 
+  const inCycle = detectCycle(graph, [...graph.nodes.keys()]).includes(node.id);
+
+  let summary = `${node.identifier} is blocked by ${upstream.length} ticket(s) and unblocks ${downstream.length} ticket(s).`;
+  if (inCycle) {
+    summary += ` ⚠ Participates in a dependency cycle — resolve it before scheduling.`;
+  }
+
   return {
     ticket: node.identifier,
     title: node.title,
     upstream,
     downstream,
-    summary: `${node.identifier} is blocked by ${upstream.length} ticket(s) and unblocks ${downstream.length} ticket(s).`,
+    summary,
     found: true,
+    inCycle,
   };
 }
 

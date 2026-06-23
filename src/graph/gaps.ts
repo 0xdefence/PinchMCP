@@ -6,6 +6,7 @@ export interface GapReport {
   isolated: string[];
   unestimatedKeystones: string[];
   unownedKeystones: string[];
+  staleBlockers: string[];
   summary: string;
 }
 
@@ -25,10 +26,22 @@ export function findGaps(graph: FeatureGraph): GapReport {
     .filter((e) => !graph.nodes.get(e.id)!.assignee)
     .map((e) => e.identifier);
 
+  const DONE = new Set(["completed", "canceled"]);
+  const staleBlockers: string[] = [];
+  for (const id of nodeIds) {
+    for (const blocker of graph.predecessors.get(id) ?? []) {
+      const b = graph.nodes.get(blocker)!;
+      if (b.stateType && DONE.has(b.stateType)) {
+        staleBlockers.push(`${ident(id)} (blocked by ${b.identifier}, which is ${b.stateType})`);
+      }
+    }
+  }
+
   const summary =
     `${cycles.length} cycle member(s), ${isolated.length} isolated, ` +
     `${unestimatedKeystones.length} unestimated keystone(s), ` +
-    `${unownedKeystones.length} unowned keystone(s).`;
+    `${unownedKeystones.length} unowned keystone(s), ` +
+    `${staleBlockers.length} stale blocker(s).`;
 
-  return { cycles, isolated, unestimatedKeystones, unownedKeystones, summary };
+  return { cycles, isolated, unestimatedKeystones, unownedKeystones, staleBlockers, summary };
 }

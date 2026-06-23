@@ -9,6 +9,7 @@ import { listProjectsTool } from "../../src/tools/listProjects.js";
 import { suggestLinksTool } from "../../src/tools/suggestLinks.js";
 import { suggestScopeTool } from "../../src/tools/suggestScope.js";
 import { surfaceGapsTool } from "../../src/tools/surfaceGaps.js";
+import { decomposeGroundingTool } from "../../src/tools/decomposeGrounding.js";
 import { IssueSource, ProjectData, ProjectSummary } from "../../src/linear/source.js";
 
 class ThrowingSource implements IssueSource {
@@ -156,5 +157,20 @@ describe("tool handlers", () => {
     expect(r.text).toMatch(/ENG-1/);
     expect(r.text.toLowerCase()).toMatch(/unestimated/);
     expect(r.text.toLowerCase()).toMatch(/unowned/);
+  });
+
+  it("decompose_grounding predicts modules for a feature and links related tickets", async () => {
+    const { makeRepo } = await import("../code/tempRepo.js");
+    const repo = makeRepo([{ message: "init", files: {
+      "src/auth/session.ts": "// session auth\nexport class SessionStore {}",
+    } }]);
+    const r = await decomposeGroundingTool(newCache(), "p1", repo, "add a new session login screen");
+    expect(r.text.toLowerCase()).toMatch(/session|auth/);
+  });
+
+  it("decompose_grounding errors clearly when repo_path is not a git repo", async () => {
+    const { tmpdir } = await import("node:os");
+    const r = await decomposeGroundingTool(newCache(), "p1", tmpdir(), "anything");
+    expect(r.text).toMatch(/not a git repo/i);
   });
 });

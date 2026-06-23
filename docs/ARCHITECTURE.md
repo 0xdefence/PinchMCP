@@ -7,7 +7,7 @@ shipped vs. planned, see [ROADMAP.md](./ROADMAP.md).
 ## Overview
 
 PinchMCP is a stdio [MCP](https://modelcontextprotocol.io) server. An MCP client
-(Claude Code) launches it as a subprocess and calls its eight tools. The server
+(Claude Code) launches it as a subprocess and calls its nine tools. The server
 fetches a Linear project's issues + blocking relations, builds an in-memory
 directed graph, and runs deterministic graph algorithms over it. There is no
 LLM, no embedding, and no persistence inside the server — it is a pure analysis
@@ -129,6 +129,7 @@ embeddings**; behind a `Matcher` seam. Powers `suggest_scope`; never enters
 | `codeIndex.ts` | Per-file keyword docs + corpus df | `buildCodeIndex` |
 | `match.ts` | TF-IDF matcher behind the `Matcher` seam | `KeywordMatcher` |
 | `scopeCouple.ts` | Predicted ticket↔ticket coupling | `scopeCouple`, `moduleOf` |
+| `groundFeature.ts` | Ground a free-text feature → predicted areas + related tickets | `groundFeature` |
 
 ### Cache — `src/cache.ts`
 
@@ -150,17 +151,19 @@ project, tens of tickets). There is no TTL or invalidation beyond an explicit
 
 `src/tools/*` are thin handlers: resolve the graph from the cache (or, for
 `list_projects`, call the source directly), call one pure function, and format an
-explainable `ToolResult`. No graph logic lives here. The eight tools are
+explainable `ToolResult`. No graph logic lives here. The nine tools are
 `list_projects`, `build_feature_graph`, `rank_keystones`, `critical_path`,
-`explain_blockers`, `suggest_links`, `suggest_scope`, and `surface_gaps`.
+`explain_blockers`, `suggest_links`, `suggest_scope`, `surface_gaps`, and
+`decompose_grounding`.
 
 `suggest_links` delegates to `src/code/` (git-derived coupling), `suggest_scope`
-to `src/scope/` (cold-start prediction), and `surface_gaps` to `src/graph/gaps.ts`
-(hygiene). All three are **read-only and never mutate `FeatureGraph`** — their
-output is scored, evidence-carrying suggestions for a human to confirm; keystone
-and critical-path analysis are unaffected. This is the load-bearing boundary:
-pinch produces deterministic structure, the client (Claude Code) generates, and
-the Linear MCP performs any writes.
+and `decompose_grounding` to `src/scope/` (cold-start prediction and feature
+grounding), and `surface_gaps` to `src/graph/gaps.ts` (hygiene). All are
+**read-only and never mutate `FeatureGraph`** — their output is scored,
+evidence-carrying suggestions for a human to confirm; keystone and critical-path
+analysis are unaffected. This is the load-bearing boundary: pinch produces
+deterministic structure, the client (Claude Code) generates, and the Linear MCP
+performs any writes.
 
 `suggest_scope` delegates to `src/scope/` — a read-only keyword-matching layer
 (no embeddings, deterministic) that indexes repo source files (path tokens +
@@ -176,7 +179,7 @@ interface ToolResult {
 ```
 
 `src/index.ts` constructs the dependency chain (`config → LinearGraphQLSource →
-GraphCache`), registers the eight tools on an `McpServer` with zod input schemas,
+GraphCache`), registers the nine tools on an `McpServer` with zod input schemas,
 and connects a `StdioServerTransport`. `src/config.ts` reads and validates
 `LINEAR_API_KEY`, failing fast at startup if it is missing.
 

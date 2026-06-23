@@ -23,7 +23,7 @@ const QUERY = `query($id: String!, $after: String) {
         description
         estimate
         branchName
-        state { name }
+        state { name type }
         assignee { name }
         relations(first: ${RELATION_LIMIT}) { nodes { type relatedIssue { id } } }
         attachments(first: 25) { nodes { url } }
@@ -134,6 +134,7 @@ export function normalizeProject(project: any): ProjectData {
     identifier: n.identifier,
     title: n.title,
     state: n.state?.name ?? "unknown",
+    stateType: n.state?.type ?? "",
     estimate: n.estimate ?? null,
     branchName: n.branchName ?? null,
     assignee: n.assignee?.name ?? null,

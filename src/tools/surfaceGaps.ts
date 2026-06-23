@@ -16,6 +16,9 @@ export async function surfaceGapsTool(
 
 function render(r: GapReport): string {
   const sections: string[] = [];
+  if (r.staleBlockers.length) {
+    sections.push(`Stale blockers (blocker already done — ticket may be ready): ${r.staleBlockers.join("; ")}`);
+  }
   if (r.cycles.length) {
     sections.push(`Cycles (must break to schedule): ${r.cycles.join(", ")}`);
   }

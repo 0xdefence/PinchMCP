@@ -6,6 +6,9 @@ import { ImportGraph } from "./types.js";
 // Captures the module specifier in:  from "x" | import "x" | require("x") | import("x")
 const SPEC_RE = /(?:\bfrom|\bimport|\brequire)\s*\(?\s*["'`]([^"'`]+)["'`]/g;
 
+// Strips both line comments and block comments before import matching
+const COMMENT_RE = /\/\/[^\n]*|\/\*[\s\S]*?\*\//g;
+
 const EXTS = [".ts", ".tsx", ".js", ".jsx", ".mjs", ".cjs"];
 const INDEX_EXTS = [".ts", ".tsx", ".js", ".jsx"];
 
@@ -74,8 +77,9 @@ export async function buildImportGraph(
       imports.set(f, new Set());
       continue;
     }
+    const code = content.replace(COMMENT_RE, "");
     const targets = new Set<string>();
-    for (const m of content.matchAll(SPEC_RE)) {
+    for (const m of code.matchAll(SPEC_RE)) {
       const resolved = resolveImport(f, m[1], repoPath);
       if (resolved && resolved !== f) targets.add(resolved);
     }

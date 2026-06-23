@@ -124,4 +124,12 @@ describe("buildFeatureGraph", () => {
     );
     expect(g.nodes.get("a")!.assignee).toBe("Ada");
   });
+
+  it("threads stateType onto the graph node", () => {
+    const g = buildFeatureGraph(
+      [{ id: "a", identifier: "ENG-1", title: "t", state: "Done", estimate: null, branchName: null, stateType: "completed" }],
+      []
+    );
+    expect(g.nodes.get("a")!.stateType).toBe("completed");
+  });
 });

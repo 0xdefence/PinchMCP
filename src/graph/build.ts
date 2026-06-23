@@ -12,6 +12,7 @@ export function buildFeatureGraph(
       identifier: i.identifier,
       title: i.title,
       state: i.state,
+      stateType: i.stateType ?? "",
       estimate: i.estimate,
       branchName: i.branchName,
       assignee: i.assignee ?? null,

@@ -71,21 +71,28 @@ New capability class: produce work items, not just analyze them. Grounded on
 Phase II's coupling graph; generation done by the client using the server's
 structured output.
 
-- ⬜ Feature → ticket decomposition — break a feature description into candidate
-  tickets *with* suggested blocking relations, so the graph exists before
-  anyone hand-links it
+- 🟡 Feature → ticket decomposition — `decompose_grounding` ships the server
+  side: predicted code areas + related tickets for a free-text feature. The
+  decomposition workflow (grounding → Claude Code drafts tickets → Linear MCP
+  creates them) is documented in
+  [`docs/DECOMPOSITION-WORKFLOW.md`](./DECOMPOSITION-WORKFLOW.md). Generation
+  itself is client-side by design; pinch never creates tickets.
 - ✅ Improvement / gap surfacing — `surface_gaps` tool: mine the graph for
-  problems: orphan tickets, cycles to resolve, keystones missing owner/estimate.
-  Deterministic; asserts/writes nothing.
-- ⬜ Grounded suggestions — "these three tickets all touch the auth module but
-  aren't linked — should they be?" (needs the Phase II code-coupling graph)
+  problems: orphan tickets, cycles to resolve, stale blockers (blocker already
+  done), keystones missing owner/estimate. Deterministic; asserts/writes nothing.
+- ✅ Grounded suggestions — `decompose_grounding` grounds free-text features
+  against the code-coupling index; surfaces tickets that overlap the same
+  code areas so decomposition does not duplicate existing work.
 
-## Smaller open items ⬜
+## Smaller open items
 
-- ⬜ `explain_blockers` cycle annotation (`rank_keystones` already warns)
+- ✅ `explain_blockers` cycle annotation — cycles now annotated in blocker output
 - ⬜ Relation pagination beyond 50 per issue (issues with >50 blocking relations
   currently miss the overflow — implausible in practice)
 
 ---
 
-_Phase I and Phase II are complete. Phase III has started: `surface_gaps` (gap surfacing) is shipped; feature decomposition and grounded suggestions remain._
+_Phase I and Phase II are complete. Phase III is nearly complete: `surface_gaps`
+(gap surfacing with stale-blocker detection) and `decompose_grounding` (feature
+grounding + decomposition workflow) are shipped. Remaining deferred items:
+whole-org scope, MCP-to-MCP passthrough, and embedding backend._

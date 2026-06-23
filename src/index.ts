@@ -13,6 +13,7 @@ import { listProjectsTool } from "./tools/listProjects.js";
 import { suggestLinksTool } from "./tools/suggestLinks.js";
 import { suggestScopeTool } from "./tools/suggestScope.js";
 import { surfaceGapsTool } from "./tools/surfaceGaps.js";
+import { decomposeGroundingTool } from "./tools/decomposeGrounding.js";
 
 function textResult(r: ToolResult) {
   return { content: [{ type: "text" as const, text: r.text }] };
@@ -141,6 +142,24 @@ async function main() {
     async ({ project_id }) => {
       const id = await resolveProjectId(source, project_id);
       return textResult(await surfaceGapsTool(cache, id));
+    }
+  );
+
+  server.registerTool(
+    "decompose_grounding",
+    {
+      title: "Ground a feature for decomposition (cold-start)",
+      description:
+        "Given a free-text feature description, predict which code areas it will touch and which existing tickets overlap — grounding for the client to decompose it into tickets. Suggestions only; pinch never creates tickets (use the Linear MCP). project_id accepts a name/slug/UUID; repo_path is the local checkout; feature is the description to ground.",
+      inputSchema: {
+        project_id: projectId,
+        repo_path: z.string().describe("Absolute path to the project's local git checkout"),
+        feature: z.string().describe("Free-text description of the feature to ground"),
+      },
+    },
+    async ({ project_id, repo_path, feature }) => {
+      const id = await resolveProjectId(source, project_id);
+      return textResult(await decomposeGroundingTool(cache, id, repo_path, feature));
     }
   );
 
