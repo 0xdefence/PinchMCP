@@ -22,11 +22,14 @@ export function groundFeature(
 ): FeatureGrounding {
   const matchedFiles = matcher.score(tokenize(featureText), index);
   const predictedModules = [...new Set(matchedFiles.map((m) => moduleOf(m.file)))];
-  const featureFiles = new Set(matchedFiles.map((m) => m.file));
+  // Relate tickets by shared MODULE, not exact file: a feature and a ticket can
+  // land in the same area (e.g. packages/agents/src/agents) without their top-K
+  // predicted files matching path-for-path.
+  const featureModules = new Set(predictedModules);
 
   const relatedTickets: RelatedTicket[] = ticketScopes
     .map((ts) => {
-      const shared = ts.matches.filter((m) => featureFiles.has(m.file));
+      const shared = ts.matches.filter((m) => featureModules.has(moduleOf(m.file)));
       if (!shared.length) return null;
       return {
         identifier: ts.identifier,
