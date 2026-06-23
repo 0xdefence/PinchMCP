@@ -85,22 +85,33 @@ structured output.
   code **module** (not just the exact file) so decomposition does not duplicate
   existing work.
 
-## Phase IV — Integrations (planned, not yet scoped)
+## Phase IV — Integrations (planned, needs its own spec)
 
-Connect PinchMCP's analysis to where the team actually works. Both preserve the
-deterministic-server identity: **pinch analyzes; clients / dedicated MCPs deliver
-and write.**
+Connect PinchMCP's analysis to where the team works. Preserves the deterministic
+boundary: **pinch analyzes (assignment recommendations, reconciliation); clients
+/ dedicated MCPs deliver, ingest, and write.**
 
-- ⬜ **Slack integration** — surface keystone / critical-path / `surface_gaps`
-  output into Slack (e.g. a sprint digest, or an alert when a new keystone or a
-  stale blocker appears). pinch produces the structured report; delivery is
-  client-side or via a Slack MCP.
-- ⬜ **Granola integration** — mine meeting notes for implied dependencies and
-  decisions about tickets, as another edge-enrichment / grounding source (sibling
-  to GraphRAG-style enrichment). Inferred edges stay **suggestions to confirm**,
-  never auto-asserted.
+- ⬜ **Capacity-aware assignment / sprint planning** (Slack-surfaced) — recommend
+  who works on what: among *ready* tickets (blockers done), prioritize by keystone
+  leverage + critical-path membership, then assign respecting each person's
+  **capacity** and current load, matching expertise via `suggest_scope` / code
+  ownership. Feeds sprint/goal planning and incoming bugs/feedback/user requests.
+  The recommendation is pinch's (deterministic, composing keystone + critical_path
+  + readiness + scope); a **Slack MCP** is the delivery + human-confirm surface;
+  the **Linear MCP** writes the assignments.
+  *Open question — capacity data source:* Linear doesn't track bandwidth; supplied
+  per-call, or partly derived from in-progress load per assignee.
+- ⬜ **Meeting-notes reconciliation** (Granola-fed) — ingest notes from meetings /
+  user calls / standups / syncs; the client/LLM **extracts** mentioned bugs, ticket
+  refs, feature requests, and blockers; pinch then **reconciles the structured
+  result against the Linear graph** — blockers mentioned but not recorded (a gap),
+  features overlapping existing tickets (`decompose_grounding`), refs that resolve.
+  Sibling to `surface_gaps`. Extraction stays client-side (keeps pinch
+  deterministic); inferred items are suggestions to confirm; the Linear MCP writes.
 
-Each needs its own brainstorm → spec before building.
+Each needs its own brainstorm → spec before building. The assignment recommender
+is the natural first deterministic deliverable; both depend on the capacity-data
+and extraction-boundary decisions above.
 
 ## Smaller open items
 
