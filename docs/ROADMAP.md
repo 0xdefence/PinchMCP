@@ -82,7 +82,25 @@ structured output.
   done), keystones missing owner/estimate. Deterministic; asserts/writes nothing.
 - ✅ Grounded suggestions — `decompose_grounding` grounds free-text features
   against the code-coupling index; surfaces tickets that overlap the same
-  code areas so decomposition does not duplicate existing work.
+  code **module** (not just the exact file) so decomposition does not duplicate
+  existing work.
+
+## Phase IV — Integrations (planned, not yet scoped)
+
+Connect PinchMCP's analysis to where the team actually works. Both preserve the
+deterministic-server identity: **pinch analyzes; clients / dedicated MCPs deliver
+and write.**
+
+- ⬜ **Slack integration** — surface keystone / critical-path / `surface_gaps`
+  output into Slack (e.g. a sprint digest, or an alert when a new keystone or a
+  stale blocker appears). pinch produces the structured report; delivery is
+  client-side or via a Slack MCP.
+- ⬜ **Granola integration** — mine meeting notes for implied dependencies and
+  decisions about tickets, as another edge-enrichment / grounding source (sibling
+  to GraphRAG-style enrichment). Inferred edges stay **suggestions to confirm**,
+  never auto-asserted.
+
+Each needs its own brainstorm → spec before building.
 
 ## Smaller open items
 
@@ -95,4 +113,5 @@ structured output.
 _Phase I and Phase II are complete. Phase III is nearly complete: `surface_gaps`
 (gap surfacing with stale-blocker detection) and `decompose_grounding` (feature
 grounding + decomposition workflow) are shipped. Remaining deferred items:
-whole-org scope, MCP-to-MCP passthrough, and embedding backend._
+whole-org scope, MCP-to-MCP passthrough, and embedding backend. **Phase IV
+(integrations) is planned: Slack and Granola — each to be scoped.**_
