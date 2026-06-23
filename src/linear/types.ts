@@ -5,6 +5,7 @@ export interface Issue {
   identifier: string; // e.g. "ENG-123"
   title: string;
   state: string;
+  stateType?: string;
   estimate: number | null; // stored, unused this slice
   branchName: string | null; // stored, unused this slice
   assignee?: string | null;

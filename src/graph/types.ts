@@ -3,6 +3,7 @@ export interface GraphNode {
   identifier: string;
   title: string;
   state: string;
+  stateType?: string;
   estimate: number | null;
   branchName: string | null;
   assignee?: string | null;
