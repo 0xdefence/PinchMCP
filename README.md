@@ -294,6 +294,9 @@ bottleneck graph proving these two metrics diverge.
 - [`docs/DECOMPOSITION-WORKFLOW.md`](docs/DECOMPOSITION-WORKFLOW.md) — how to
   break a free-text feature into grounded Linear tickets using `decompose_grounding`,
   Claude Code, and the Linear MCP together.
+- [`docs/SECURITY.md`](docs/SECURITY.md) — trust model: read-only, one local
+  secret (never logged), writes delegated to the Linear MCP, and how integrations
+  keep secrets with their own MCP.
 
 ---
 
