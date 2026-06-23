@@ -7,6 +7,9 @@ export interface Issue {
   state: string;
   estimate: number | null; // stored, unused this slice
   branchName: string | null; // stored, unused this slice
+  assignee?: string | null;
+  description?: string;
+  prNumbers?: number[]; // GitHub PR numbers from Linear attachments
 }
 
 export interface Relation {

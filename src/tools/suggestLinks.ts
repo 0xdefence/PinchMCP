@@ -26,6 +26,7 @@ export async function suggestLinksTool(
     id: n.id,
     identifier: n.identifier,
     branchName: n.branchName,
+    prNumbers: n.prNumbers ?? [],
   }));
 
   const raw = await gitLog(repoPath, MAX_COMMITS + 1);

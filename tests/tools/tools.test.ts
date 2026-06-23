@@ -7,6 +7,8 @@ import { explainBlockersTool } from "../../src/tools/explainBlockers.js";
 import { criticalPathTool } from "../../src/tools/criticalPath.js";
 import { listProjectsTool } from "../../src/tools/listProjects.js";
 import { suggestLinksTool } from "../../src/tools/suggestLinks.js";
+import { suggestScopeTool } from "../../src/tools/suggestScope.js";
+import { surfaceGapsTool } from "../../src/tools/surfaceGaps.js";
 import { IssueSource, ProjectData, ProjectSummary } from "../../src/linear/source.js";
 
 class ThrowingSource implements IssueSource {
@@ -130,5 +132,29 @@ describe("tool handlers", () => {
     const { tmpdir } = await import("node:os");
     const r = await suggestLinksTool(newCache(), "p1", tmpdir());
     expect(r.text).toMatch(/not a git repo/i);
+  });
+
+  it("suggest_scope predicts code areas from ticket text", async () => {
+    const { makeRepo } = await import("../code/tempRepo.js");
+    const repo = makeRepo([{ message: "init", files: {
+      "src/auth/session.ts": "// session auth\nexport class SessionStore {}",
+      "src/unrelated/math.ts": "export const add = (a, b) => a + b;",
+    } }]);
+    const r = await suggestScopeTool(newCache(), "p1", repo);
+    expect(r.text).toMatch(/ENG-2/);
+    expect(r.text).toMatch(/session/i);
+  });
+
+  it("suggest_scope errors clearly when repo_path is not a git repo", async () => {
+    const { tmpdir } = await import("node:os");
+    const r = await suggestScopeTool(newCache(), "p1", tmpdir());
+    expect(r.text).toMatch(/not a git repo/i);
+  });
+
+  it("surface_gaps flags an unestimated, unowned keystone", async () => {
+    const r = await surfaceGapsTool(newCache(), "p1");
+    expect(r.text).toMatch(/ENG-1/);
+    expect(r.text.toLowerCase()).toMatch(/unestimated/);
+    expect(r.text.toLowerCase()).toMatch(/unowned/);
   });
 });

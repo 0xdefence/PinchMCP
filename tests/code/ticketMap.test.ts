@@ -43,4 +43,20 @@ describe("mapTicketsToFiles", () => {
     ]);
     expect(out[0].files).toEqual([]);
   });
+
+  it("maps an issue to files via its attached PR number, with no identifier in the message", () => {
+    const cs = [commit("feat: railway architecture (#44)", ["docs/railway.md"])];
+    const out = mapTicketsToFiles(cs, [
+      { id: "m", identifier: "ELI-36", branchName: null, prNumbers: [44] },
+    ]);
+    expect(out[0].files).toEqual(["docs/railway.md"]);
+  });
+
+  it("does not match a different PR number", () => {
+    const cs = [commit("feat: something (#43)", ["a.ts"])];
+    const out = mapTicketsToFiles(cs, [
+      { id: "m", identifier: "ELI-36", branchName: null, prNumbers: [44] },
+    ]);
+    expect(out[0].files).toEqual([]);
+  });
 });

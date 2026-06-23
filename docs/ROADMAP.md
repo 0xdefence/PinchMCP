@@ -52,19 +52,20 @@ co-change (SCIP/tree-sitter deferred); inferred edges surface through a separate
 `suggest_links` tool, scored and evidence-carrying, undirected unless
 import-derived, **never folded into keystone/CPM**.
 
-- ✅ Ticket → code mapping — via `branchName` + commit/PR references to issue ids
+- ✅ Ticket → code mapping — identifier/branch commit refs **plus Linear attachment PR numbers** (`(#N)` squash-merge match)
 - ✅ Code → code dependency — resolved intra-repo relative-import graph (TS/JS)
 - ✅ Git **co-change** matrix — hidden coupling from files that change together
 - ✅ `suggest_links` tool — scored candidate ticket↔ticket edges with evidence
-- ⬜ Cold-start semantic matching — match ticket text against the symbol index so
-  future tickets with no code yet still place in the graph
+- ✅ Cold-start semantic matching — keyword/TF-IDF index of repo source files;
+  `suggest_scope` tool predicts code areas per ticket and surfaces likely
+  cross-ticket couplings, for backlog tickets with no code yet
 - ⬜ GraphRAG-style edge enrichment — LLM-extract implicit dependencies from
   ticket descriptions / comments / PR text (suggestions only)
 - ⬜ MCP-to-MCP passthrough — implement `IssueSource` against the official Linear
   MCP and swap it in (seam already in place)
 - ⬜ Whole-org scope — beyond one project (10–40 tickets) to cross-project/org
 
-## Phase III — Generative (scope out work) ⬜
+## Phase III — Generative (scope out work) 🟡
 
 New capability class: produce work items, not just analyze them. Grounded on
 Phase II's coupling graph; generation done by the client using the server's
@@ -73,9 +74,9 @@ structured output.
 - ⬜ Feature → ticket decomposition — break a feature description into candidate
   tickets *with* suggested blocking relations, so the graph exists before
   anyone hand-links it
-- ⬜ Improvement / gap surfacing — mine the graph for problems: orphan tickets,
-  suspected-but-unlinked blockers, cycles to resolve, keystones missing
-  owner/estimate
+- ✅ Improvement / gap surfacing — `surface_gaps` tool: mine the graph for
+  problems: orphan tickets, cycles to resolve, keystones missing owner/estimate.
+  Deterministic; asserts/writes nothing.
 - ⬜ Grounded suggestions — "these three tickets all touch the auth module but
   aren't linked — should they be?" (needs the Phase II code-coupling graph)
 
@@ -87,4 +88,4 @@ structured output.
 
 ---
 
-_Phase I and Phase II are complete. Phase III (generative scoping) is not started._
+_Phase I and Phase II are complete. Phase III has started: `surface_gaps` (gap surfacing) is shipped; feature decomposition and grounded suggestions remain._

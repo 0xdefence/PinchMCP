@@ -1,12 +1,13 @@
 # PinchMCP Architecture
 
-Technical reference for the slice-1 (explicit-graph) implementation. For the
-keystone algorithm itself, see [KEYSTONE-ALGORITHM.md](./KEYSTONE-ALGORITHM.md).
+Technical reference for the implementation through Phase III. For the keystone
+algorithm itself, see [KEYSTONE-ALGORITHM.md](./KEYSTONE-ALGORITHM.md); for what's
+shipped vs. planned, see [ROADMAP.md](./ROADMAP.md).
 
 ## Overview
 
 PinchMCP is a stdio [MCP](https://modelcontextprotocol.io) server. An MCP client
-(Claude Code) launches it as a subprocess and calls its six tools. The server
+(Claude Code) launches it as a subprocess and calls its eight tools. The server
 fetches a Linear project's issues + blocking relations, builds an in-memory
 directed graph, and runs deterministic graph algorithms over it. There is no
 LLM, no embedding, and no persistence inside the server — it is a pure analysis
@@ -95,9 +96,39 @@ tested against synthetic fixtures.
 |------|----------------|-------------|
 | `types.ts` | Graph + result data types | `GraphNode`, `Edge`, `FeatureGraph`, `KeystoneEntry`, `KeystoneRanking` |
 | `build.ts` | Issues + relations → directed graph | `buildFeatureGraph` |
-| `keystone.ts` | Dominator-based leverage ranking | `rankKeystones` |
+| `keystone.ts` | Dominator-based leverage ranking | `rankKeystones`, `detectCycle` |
 | `criticalPath.ts` | Node-weighted CPM (earliest/latest, slack, critical chain) | `criticalPath` |
 | `blockers.ts` | Transitive blocker/unblock walk | `explainBlockers`, `BlockerExplanation` |
+| `gaps.ts` | Graph hygiene (cycles, isolated, unestimated/unowned keystones) | `findGaps` |
+
+### Code grounding — `src/code/` (Phase II)
+
+Read-only git + filesystem layer that *infers* coupling from the code tickets
+touch. Inferred edges are **never inserted into `FeatureGraph`** — they surface
+as confirmable suggestions through `suggest_links`, and keystone/critical-path
+analysis are unaffected.
+
+| File | Responsibility | Key exports |
+|------|----------------|-------------|
+| `git.ts` | Shell `git` for commits, changed files, source listing | `isGitRepo`, `gitLog`, `listSourceFiles` |
+| `ticketMap.ts` | Issue → files (identifier/branch + attached PR numbers) | `mapTicketsToFiles` |
+| `coChange.ts` | File↔file co-change matrix from history | `buildCoChange` |
+| `importGraph.ts` | Resolved intra-repo relative-import edges | `buildImportGraph` |
+| `couple.ts` | Score candidate ticket↔ticket couplings | `coupleTickets` |
+
+### Cold-start prediction — `src/scope/` (Phase II-c)
+
+For backlog tickets with no code yet: predict likely code areas by TF-IDF
+matching ticket text against a keyword index of the repo. Deterministic, **no
+embeddings**; behind a `Matcher` seam. Powers `suggest_scope`; never enters
+`FeatureGraph`.
+
+| File | Responsibility | Key exports |
+|------|----------------|-------------|
+| `tokenize.ts` | Identifier/text tokenizer (camel/snake/kebab, stopwords) | `tokenize` |
+| `codeIndex.ts` | Per-file keyword docs + corpus df | `buildCodeIndex` |
+| `match.ts` | TF-IDF matcher behind the `Matcher` seam | `KeywordMatcher` |
+| `scopeCouple.ts` | Predicted ticket↔ticket coupling | `scopeCouple`, `moduleOf` |
 
 ### Cache — `src/cache.ts`
 
@@ -119,14 +150,23 @@ project, tens of tickets). There is no TTL or invalidation beyond an explicit
 
 `src/tools/*` are thin handlers: resolve the graph from the cache (or, for
 `list_projects`, call the source directly), call one pure function, and format an
-explainable `ToolResult`. No graph logic lives here. The six tools are
+explainable `ToolResult`. No graph logic lives here. The eight tools are
 `list_projects`, `build_feature_graph`, `rank_keystones`, `critical_path`,
-`explain_blockers`, and `suggest_links`.
+`explain_blockers`, `suggest_links`, `suggest_scope`, and `surface_gaps`.
 
-`suggest_links` delegates to `src/code/` — a read-only layer of git and
-filesystem reads whose inferred edges are **never inserted into `FeatureGraph`**.
-Coupling is surfaced as scored, evidence-carrying `LinkSuggestion` objects for
-the user to confirm; keystone and critical-path analysis are unaffected.
+`suggest_links` delegates to `src/code/` (git-derived coupling), `suggest_scope`
+to `src/scope/` (cold-start prediction), and `surface_gaps` to `src/graph/gaps.ts`
+(hygiene). All three are **read-only and never mutate `FeatureGraph`** — their
+output is scored, evidence-carrying suggestions for a human to confirm; keystone
+and critical-path analysis are unaffected. This is the load-bearing boundary:
+pinch produces deterministic structure, the client (Claude Code) generates, and
+the Linear MCP performs any writes.
+
+`suggest_scope` delegates to `src/scope/` — a read-only keyword-matching layer
+(no embeddings, deterministic) that indexes repo source files (path tokens +
+identifiers + comment words) and scores ticket text against them via TF-IDF.
+Predicted scope and cross-ticket couplings are planning aids only; they **never
+enter `FeatureGraph`** and are never used in keystone or critical-path analysis.
 
 ```ts
 interface ToolResult {
@@ -136,7 +176,7 @@ interface ToolResult {
 ```
 
 `src/index.ts` constructs the dependency chain (`config → LinearGraphQLSource →
-GraphCache`), registers the six tools on an `McpServer` with zod input schemas,
+GraphCache`), registers the eight tools on an `McpServer` with zod input schemas,
 and connects a `StdioServerTransport`. `src/config.ts` reads and validates
 `LINEAR_API_KEY`, failing fast at startup if it is missing.
 
@@ -203,7 +243,7 @@ and separates flow edges from metadata:
 - **Cache / tools** — exercised through a `StubSource` test double; one test
   drives a `ThrowingSource` to lock in error propagation.
 
-Run with `npm test` (vitest). The suite is 85 tests across 17 files.
+Run with `npm test` (vitest). The suite is 117 tests across 22 files.
 
 ## Design decisions
 

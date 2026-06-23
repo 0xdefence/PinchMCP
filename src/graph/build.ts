@@ -14,6 +14,9 @@ export function buildFeatureGraph(
       state: i.state,
       estimate: i.estimate,
       branchName: i.branchName,
+      assignee: i.assignee ?? null,
+      description: i.description ?? "",
+      prNumbers: i.prNumbers ?? [],
     });
   }
 

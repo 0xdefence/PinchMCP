@@ -6,10 +6,11 @@ of the dependency graph. It sits between Claude Code and Linear: it reads a
 project's issues and their blocking relations, fuses them into an in-memory
 graph, and tells you where the leverage is.
 
-> **Status — slice 1 (explicit-graph path).** This release proves the idea
-> end-to-end using Linear's *explicit* `blocked`/`blocking` relations only.
-> The inferred code-coupling layer (static import graph + git co-change) is on
-> the roadmap, not in this build. See [Roadmap](#roadmap).
+> **Status.** Phase I (explicit dependency graph) and Phase II (code grounding)
+> are shipped; Phase III (generative scoping) has started. Eight tools across the
+> explicit graph, inferred code coupling, cold-start prediction, and graph
+> hygiene — all deterministic, no LLM in the server. See
+> [`docs/ROADMAP.md`](docs/ROADMAP.md) for what's done vs. planned.
 
 ---
 
@@ -99,6 +100,8 @@ ENG-3 passes through ENG-1," not a bare score.
 | `critical_path` | `project_id` | CPM over estimates: the longest-duration chain that sets the timeline, plus per-ticket slack. Answers "what sets total duration" (vs keystones' "max leverage unlock"). Unestimated tickets default to 1. |
 | `explain_blockers` | `project_id`, `ticket_id` | Transitive blockers (must finish first) and downstream unblocks for one ticket. `ticket_id` accepts a Linear UUID or a human identifier like `ENG-12`. |
 | `suggest_links` | `project_id`, `repo_path` | Infers coupling from code (shared files, intra-repo imports, git co-change) and suggests ticket links Linear doesn't record — evidence-backed, confirm-before-acting. Never folded into keystone/critical_path. |
+| `suggest_scope` | `project_id`, `repo_path` | **Cold-start**: predicts which code areas a ticket will likely touch and which tickets likely couple, from ticket text vs a keyword index of the repo — for backlog tickets with no code yet. Planning aid; never used in keystone/critical_path. |
+| `surface_gaps` | `project_id` | Reports graph hygiene gaps — cycles, isolated tickets, and keystones missing an estimate or owner. Deterministic; asserts/writes nothing. |
 
 Across the analysis tools, **`project_id` accepts a Linear project name,
 URL slug, or UUID** — it's resolved internally, so you can speak in names

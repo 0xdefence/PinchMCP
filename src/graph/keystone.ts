@@ -170,7 +170,7 @@ function computeIdom(
   return idom;
 }
 
-function detectCycle(graph: FeatureGraph, nodeIds: string[]): string[] {
+export function detectCycle(graph: FeatureGraph, nodeIds: string[]): string[] {
   const indeg = new Map<string, number>();
   for (const id of nodeIds) indeg.set(id, graph.predecessors.get(id)?.size ?? 0);
   const queue = nodeIds.filter((id) => indeg.get(id) === 0);
