@@ -47,4 +47,22 @@ describe("findGaps", () => {
     expect(r.unestimatedKeystones).toEqual([]);
     expect(r.unownedKeystones).toEqual([]);
   });
+
+  it("flags a ticket blocked by a completed/canceled ticket", () => {
+    const g = buildFeatureGraph(
+      [issue("a", { stateType: "completed" }), issue("b")],
+      [blocks("a", "b")]
+    );
+    const sb = findGaps(g).staleBlockers;
+    expect(sb).toHaveLength(1);
+    expect(sb[0]).toMatch(/B.*A.*completed/);
+  });
+
+  it("does not flag a blocker that is still open", () => {
+    const g = buildFeatureGraph(
+      [issue("a", { stateType: "started" }), issue("b")],
+      [blocks("a", "b")]
+    );
+    expect(findGaps(g).staleBlockers).toEqual([]);
+  });
 });
