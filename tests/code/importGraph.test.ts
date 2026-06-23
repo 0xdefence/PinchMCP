@@ -43,6 +43,16 @@ describe("buildImportGraph", () => {
     expect([...(g.get("src/a.ts") ?? [])]).toEqual([]);
   });
 
+  it("ignores imports inside comments", async () => {
+    const repo = makeRepo([{ message: "init", files: {
+      "src/a.ts": `// import { x } from "./b";\n/* import "./c"; */\nexport const ok = 1;`,
+      "src/b.ts": `export const b = 1;`,
+      "src/c.ts": `export const c = 1;`,
+    } }]);
+    const g = await buildImportGraph(repo, ["src/a.ts", "src/b.ts", "src/c.ts"]);
+    expect([...(g.get("src/a.ts") ?? [])]).toEqual([]);
+  });
+
   it("captures require() and dynamic import()", async () => {
     const repo = makeRepo([
       {
