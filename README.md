@@ -1,16 +1,26 @@
 # PinchMCP
 
-An MCP server that finds the **keystone** ticket in a Linear feature — the one
-that, once done, unblocks the most downstream work — via **dominator analysis**
-of the dependency graph. It sits between Claude Code and Linear: it reads a
-project's issues and their blocking relations, fuses them into an in-memory
-graph, and tells you where the leverage is.
+> _Find the **keystone** ticket — the one that, once done, unblocks the most downstream work._
 
-> **Status.** Phase I (explicit dependency graph) and Phase II (code grounding)
-> are shipped; Phase III (generative scoping) is nearly complete. Nine tools across the
-> explicit graph, inferred code coupling, cold-start prediction, graph hygiene, and
-> feature decomposition grounding — all deterministic, no LLM in the server. See
-> [`docs/ROADMAP.md`](docs/ROADMAP.md) for what's done vs. planned.
+![MCP](https://img.shields.io/badge/MCP-server-2563eb)
+![TypeScript](https://img.shields.io/badge/TypeScript-ESM-3178c6?logo=typescript&logoColor=white)
+![Node](https://img.shields.io/badge/node-%E2%89%A522-339933?logo=node.js&logoColor=white)
+![tests](https://img.shields.io/badge/tests-129_passing-3fb950)
+![read-only](https://img.shields.io/badge/read--only-no_writes-8957e5)
+
+An MCP server between Claude Code and Linear. It reads a project's issues and
+their blocking relations, fuses them into an in-memory dependency graph, and
+points you at the leverage — via **dominator analysis**, not a bare score. Then
+it goes further: the **critical path** (CPM), **inferred code coupling**,
+**cold-start predictions** for not-yet-built tickets, and **graph hygiene**.
+
+**Deterministic, read-only, no LLM in the server — it analyzes; you decide.**
+
+> **Status — `v0.3.0`.** Phases I–III shipped: **9 tools** spanning the explicit
+> dependency graph, inferred code coupling, cold-start prediction, graph hygiene,
+> and feature-decomposition grounding. Phase IV (Slack + Granola integrations) is
+> on the roadmap. See [`docs/ROADMAP.md`](docs/ROADMAP.md) for done vs. planned and
+> [`docs/SECURITY.md`](docs/SECURITY.md) for the trust model.
 
 ---
 
